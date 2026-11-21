@@ -1,146 +1,152 @@
-# AAROH | Marketplace for Indian Art & Craft
+# AAROH MARKETPLACE
+### Where Tradition Meets Technology
 
-**Bridging Traditional Indian Craftsmanship with Digital Innovation.**
-
-<p align="center">
-  A digital platform celebrating India's artistic heritage and connecting traditional artisans with a wider audience.
-</p>
+**A Digital Marketplace Celebrating Indian Art, Culture & Craftsmanship**
 
 ---
 
-## Project Overview
+## 01. Project Overview
 
-Aaroh is a web-based marketplace focused on promoting traditional Indian handicrafts, regional artwork, and artisan products through a modern digital experience.
+Aaroh Marketplace is a digital platform designed to promote traditional Indian handicrafts, regional artwork, and artisan products.
 
-The platform aims to bring traditional craftsmanship closer to customers while providing artisans with opportunities to showcase their work.
+The project aims to bridge the gap between traditional craftsmanship and modern technology by creating a digital space where artisans can showcase their work and customers can discover India's rich cultural heritage.
 
-**Project Status:** In Development
+**Project Status:** Work in Progress
 
-## Core Features
+## 02. Problem Statement
 
-- **Artisan Marketplace** – Explore traditional Indian crafts and handmade products.
-- **Cultural Discovery** – Discover India's diverse art forms and craftsmanship.
-- **Authentication** – Google and Microsoft login integration.
-- **Multilingual Interface** – Support for multiple languages.
-- **Artisan Dashboard** – Dedicated artisan interface.
-- **Admin Dashboard** – Administrative management interface.
-- **Product Exploration** – Browse collections and product details.
-- **Customer Interaction** – Enquiries and custom commission interfaces.
+Traditional Indian artisans often face challenges in reaching wider audiences, showcasing their craftsmanship, and adapting to the growing digital marketplace.
 
-*Features are actively being developed.*
+Aaroh aims to address these challenges through a centralized digital platform that promotes artisan visibility and celebrates India's diverse artistic traditions.
 
-## Technology Stack
+## 03. Project Objectives
 
-| Layer | Technology |
+- Promote traditional Indian art and craftsmanship.
+- Create digital visibility for artisans.
+- Make regional artwork accessible to a wider audience.
+- Encourage cultural preservation through technology.
+- Provide an interactive marketplace experience.
+
+## 04. Key Features
+
+**Artisan Marketplace**
+- Explore traditional Indian crafts and handmade products.
+- Discover regional art forms and artisan collections.
+
+**Authentication & Security**
+- Google authentication integration.
+- Microsoft authentication integration.
+- Authentication and security-related interfaces.
+
+**Interactive Dashboards**
+- Artisan dashboard.
+- Admin dashboard.
+- Customer-oriented interfaces.
+
+**Multilingual Experience**
+- Multiple language translations.
+- Language selection interface.
+
+**Customer Engagement**
+- Product exploration and details.
+- Enquiry interfaces.
+- Custom commission interfaces.
+
+*Features are currently under development.*
+
+## 05. Technology Stack
+
+| Category | Technology |
 |---|---|
 | Frontend | React.js, Vite |
 | Backend | Node.js |
 | Styling | CSS |
 | Database | Supabase |
 | Authentication | Google OAuth, Microsoft OAuth |
-| Version Control | Git & GitHub |
+| Version Control | Git, GitHub |
 
-## Project Architecture
+## 06. System Architecture
+
+The project follows a frontend-backend architecture.
+
+- **Frontend Layer:** User interfaces, marketplace components, dashboards and language support.
+- **Backend Layer:** Server-side routes, authentication services, middleware and application logic.
+- **Database Layer:** Data management and database integration.
+- **Authentication Layer:** Third-party authentication integrations.
+
+## 07. Project Structure
 
 ```text
 AAROH-MARKETPLACE/
 │
-├── public/                 # Public assets and images
+├── public/
+│   └── assets/
 │
-├── src/                    # Frontend application
-│   ├── components/         # UI components
-│   ├── assets/             # Application assets
-│   ├── data/               # Application data
-│   ├── locales/            # Language translations
-│   ├── services/           # Frontend services
-│   └── styles/             # CSS styles
-│
-├── server/                 # Backend application
+├── server/
 │   ├── database/
 │   ├── middleware/
 │   ├── migrations/
 │   ├── routes/
 │   └── services/
 │
+├── src/
+│   ├── components/
+│   ├── assets/
+│   ├── data/
+│   ├── locales/
+│   ├── services/
+│   └── styles/
+│
 ├── package.json
-├── index.html
 ├── supabase_migration.sql
 └── vite.config.js
 ```
 
-## Getting Started
+## 08. Project Team & Contributions
 
-### Prerequisites
+**Nishtha — Backend Development, System Integration & Project Design**
+- Backend architecture and development.
+- Database design and dataset integration.
+- Google and Microsoft authentication integration.
+- System functionality, security and application logic.
+- Project planning, technical decisions and overall integration.
 
-- Node.js
-- npm
-- Git
+**Harshita — Frontend Development, UI/UX & Creative Ideation**
+- Frontend development and interface implementation.
+- UI/UX design and visual presentation.
+- Creative feature ideation and suggestions.
+- User experience improvements and design enhancements.
+- Contribution to the overall product concept and development.
 
-### 1. Clone the Repository
+**Collaboration**
 
-```bash
-git clone https://github.com/Nishtha-projects/AAROH-MARKETPLACE-.git
-```
+Aaroh Marketplace is a collaborative project that combines technical development, creative thinking, and user-focused design to build a digital platform celebrating Indian craftsmanship.
 
-### 2. Navigate to the Project
+## 09. Future Scope
 
-```bash
-cd AAROH-MARKETPLACE-
-```
+- Enhanced artisan profiles and product management.
+- Improved marketplace functionality.
+- Additional regional language support.
+- Further authentication and security enhancements.
+- Expanded customer and artisan engagement features.
 
-### 3. Install Frontend Dependencies
+## 10. Project Repository
 
-```bash
-npm install
-```
-
-### 4. Configure Environment Variables
-
-Create the required environment files using the setup guides provided in the repository.
-
-Configure database and authentication credentials locally. Never commit secret values to GitHub.
-
-### 5. Run the Frontend
-
-```bash
-npm run dev
-```
-
-Vite will display the local development URL in the terminal. Open that URL in your browser.
-
-### Backend Setup
-
-The backend is maintained separately inside the `server/` directory. Install its dependencies and use the scripts defined in `server/package.json` after configuring the required environment variables.
-
-Refer to `AUTH_SETUP_GUIDE.md` and `FIREBASE_AUTH_SETUP.md` for authentication configuration.
-
-## Team
-
-**Nishtha**
-- Backend development and integration
-- Database and dataset-related work
-- Authentication integration
-
-**Harshita**
-- Frontend development
-- User interface and component development
-
-## Project Vision
-
-To preserve India's traditional craftsmanship through technology, empower artisans, and create a digital bridge between cultural heritage and modern consumers.
-
-## Repository
-
-**GitHub:** https://github.com/Nishtha-projects/AAROH-MARKETPLACE-
+**GitHub:** [Aaroh Marketplace](https://github.com/Nishtha-projects/AAROH-MARKETPLACE-)
 
 ---
 
-## Copyright
+## Copyright & Ownership
 
 © 2026 Aaroh Marketplace Project Team. All Rights Reserved.
 
-This repository is publicly available for project viewing and academic evaluation. Public availability does not grant permission to reproduce, redistribute, or commercially reuse the project without prior written permission from the project owner.
+This project and its source code are the intellectual work of the project team.
+
+The repository is publicly available for viewing and academic evaluation. Public availability does not grant permission for unauthorized reproduction, redistribution, modification, or commercial reuse.
+
+For permissions, prior written consent from the project owner is required.
 
 ---
 
-**AAROH — Celebrating Heritage. Empowering Artisans.**
+### AAROH MARKETPLACE
+**Celebrating Heritage. Empowering Artisans.**
