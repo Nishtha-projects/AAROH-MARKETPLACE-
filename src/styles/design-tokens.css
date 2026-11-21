@@ -1,0 +1,243 @@
+/* =====================================================================
+   AAROH DESIGN SYSTEM - COLOR PALETTES & TOKENS
+   Inspired by Indian living craft traditions, floral motifs, swallows,
+   warm ivory, indigo, dusty rose, olive, and antique ochre.
+   ===================================================================== */
+
+:root {
+  /* Common System Values */
+  --font-serif: 'Cormorant Garamond', Garamond, Georgia, serif;
+  --font-display: 'Cinzel Decorative', 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-devanagari: 'Rozha One', serif;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.12);
+  --shadow-float: 0 24px 60px rgba(0, 0, 0, 0.16);
+
+  --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Terracotta Accent Tokens */
+  --accent-terracotta: #B84A28;
+  --accent-terracotta-hover: #9E3E20;
+  --accent-terracotta-dark: #7D2D16;
+  --accent-terracotta-soft: #FDF1EC;
+}
+
+/* -------------------------------------------------------------
+   PALETTE 1: IVORY & INDIGO (Default Aaroh Signature Motif)
+   Warm ivory, indigo swallows, dusty rose petals, olive leaves, ochre stars
+   ------------------------------------------------------------- */
+[data-palette="ivory-indigo"][data-theme-mode="light"],
+[data-palette="ivory-indigo"] {
+  --bg-primary: #FAF5EB;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFDFC;
+  --bg-surface-subtle: #F3ECE0;
+  --bg-overlay: rgba(250, 245, 235, 0.88);
+
+  --text-primary: #1C2638;
+  --text-secondary: #525E75;
+  --text-muted: #7E8BA0;
+  --text-inverse: #FAF5EB;
+
+  --accent-indigo: #1A3459;
+  --accent-indigo-hover: #122540;
+  --accent-rose: #C66376;
+  --accent-rose-soft: #F9EBEF;
+  --accent-olive: #68793D;
+  --accent-olive-soft: #EEF3E4;
+  --accent-ochre: #BF872E;
+  --accent-ochre-soft: #FAF2E3;
+  --accent-plum: #52273C;
+  --accent-terracotta: #B84A28;
+  --accent-terracotta-hover: #9E3E20;
+  --accent-terracotta-soft: #FDF1EC;
+
+  --border-subtle: #E8DDD0;
+  --border-strong: #D5C5B2;
+  --focus-ring: #1A3459;
+
+  /* Product image background is always kept calm and neutral */
+  --product-bg: #F4EFE6;
+  --tag-bg: #EAE2D2;
+}
+
+[data-palette="ivory-indigo"][data-theme-mode="dark"] {
+  --bg-primary: #0F1622;
+  --bg-surface: #182232;
+  --bg-surface-elevated: #202D42;
+  --bg-surface-subtle: #141C29;
+  --bg-overlay: rgba(15, 22, 34, 0.92);
+
+  --text-primary: #FAF4EB;
+  --text-secondary: #B9C5D6;
+  --text-muted: #8192A8;
+  --text-inverse: #0F1622;
+
+  --accent-indigo: #679CE4;
+  --accent-indigo-hover: #8AB7F8;
+  --accent-rose: #E38396;
+  --accent-rose-soft: #2D1A22;
+  --accent-olive: #9EBA61;
+  --accent-olive-soft: #1E2916;
+  --accent-ochre: #E6AA4E;
+  --accent-ochre-soft: #302413;
+  --accent-plum: #A45C80;
+  --accent-terracotta: #E06C48;
+  --accent-terracotta-hover: #F08564;
+  --accent-terracotta-soft: #381E17;
+
+  --border-subtle: #24334A;
+  --border-strong: #364B6C;
+  --focus-ring: #679CE4;
+
+  --product-bg: #1A2433;
+  --tag-bg: #233145;
+}
+
+/* -------------------------------------------------------------
+   PALETTE 2: TERRACOTTA (Earthy, Warm Clay & Burnt Sienna)
+   ------------------------------------------------------------- */
+[data-palette="terracotta"][data-theme-mode="light"] {
+  --bg-primary: #F9F4EE;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFDFC;
+  --bg-surface-subtle: #EFE6DC;
+  --bg-overlay: rgba(249, 244, 238, 0.88);
+
+  --text-primary: #2C1E1A;
+  --text-secondary: #65524B;
+  --text-muted: #957F77;
+  --text-inverse: #F9F4EE;
+
+  --accent-indigo: #C25634;
+  /* Terracotta Primary */
+  --accent-indigo-hover: #A34323;
+  --accent-rose: #D97E59;
+  --accent-rose-soft: #FCEFE9;
+  --accent-olive: #7A693B;
+  --accent-olive-soft: #F3EFE4;
+  --accent-ochre: #CB872C;
+  --accent-ochre-soft: #FAF1E2;
+  --accent-plum: #6E3224;
+
+  --border-subtle: #E6D7CB;
+  --border-strong: #D2BCAB;
+  --focus-ring: #C25634;
+
+  --product-bg: #F2E8DC;
+  --tag-bg: #E7DACD;
+}
+
+[data-palette="terracotta"][data-theme-mode="dark"] {
+  --bg-primary: #191210;
+  --bg-surface: #271D1A;
+  --bg-surface-elevated: #332723;
+  --bg-surface-subtle: #1F1714;
+  --bg-overlay: rgba(25, 18, 16, 0.92);
+
+  --text-primary: #F7EFE9;
+  --text-secondary: #CEBCB5;
+  --text-muted: #9D8A82;
+  --text-inverse: #191210;
+
+  --accent-indigo: #E87A57;
+  --accent-indigo-hover: #F29577;
+  --accent-rose: #F0987A;
+  --accent-rose-soft: #381E17;
+  --accent-olive: #BAA66E;
+  --accent-olive-soft: #2E2718;
+  --accent-ochre: #F0AC51;
+  --accent-ochre-soft: #382713;
+  --accent-plum: #B86754;
+
+  --border-subtle: #3E2F29;
+  --border-strong: #59443B;
+  --focus-ring: #E87A57;
+
+  --product-bg: #221A17;
+  --tag-bg: #352621;
+}
+
+/* -------------------------------------------------------------
+   PALETTE 3: BOTANICAL (Forest Moss, Sage & Raw Earth)
+   ------------------------------------------------------------- */
+[data-palette="botanical"][data-theme-mode="light"] {
+  --bg-primary: #F5F7F2;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FDFFFC;
+  --bg-surface-subtle: #E8EDE2;
+  --bg-overlay: rgba(245, 247, 242, 0.88);
+
+  --text-primary: #1C271E;
+  --text-secondary: #4F5E52;
+  --text-muted: #7A8B7D;
+  --text-inverse: #F5F7F2;
+
+  --accent-indigo: #2D4C3A;
+  /* Deep Forest Moss */
+  --accent-indigo-hover: #1E3528;
+  --accent-rose: #B86474;
+  --accent-rose-soft: #F9ECEF;
+  --accent-olive: #5B7546;
+  --accent-olive-soft: #ECF2E6;
+  --accent-ochre: #B88130;
+  --accent-ochre-soft: #FAF2E4;
+  --accent-plum: #42302E;
+
+  --border-subtle: #DFE5D8;
+  --border-strong: #C7D2BE;
+  --focus-ring: #2D4C3A;
+
+  --product-bg: #EEF3E9;
+  --tag-bg: #E1E8DA;
+}
+
+[data-palette="botanical"][data-theme-mode="dark"] {
+  --bg-primary: #101913;
+  --bg-surface: #19271E;
+  --bg-surface-elevated: #223428;
+  --bg-surface-subtle: #142018;
+  --bg-overlay: rgba(16, 25, 19, 0.92);
+
+  --text-primary: #F0F6F1;
+  --text-secondary: #B4C6B8;
+  --text-muted: #7E9483;
+  --text-inverse: #101913;
+
+  --accent-indigo: #6DA483;
+  --accent-indigo-hover: #8FC4A4;
+  --accent-rose: #D98090;
+  --accent-rose-soft: #301A1F;
+  --accent-olive: #92B974;
+  --accent-olive-soft: #1E2C17;
+  --accent-ochre: #E4A650;
+  --accent-ochre-soft: #302312;
+  --accent-plum: #8F5E5B;
+
+  --border-subtle: #2A3F32;
+  --border-strong: #3D5A47;
+  --focus-ring: #6DA483;
+
+  --product-bg: #152219;
+  --tag-bg: #223629;
+}
+
+/* Reduced Motion Mode Support (Calm Motion) */
+[data-reduced-motion="true"] .animate-float,
+[data-reduced-motion="true"] .cultural-particles-container,
+[data-reduced-motion="true"] .radiant-halo,
+[data-reduced-motion="true"] .ripple-ring {
+  animation: none !important;
+}

@@ -1,0 +1,34 @@
+{
+  "name": "aaroh-marketplace",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "server": "node server/server.js",
+    "server:dev": "node --watch server/server.js",
+    "db:inspect": "node server/inspect-db.js",
+    "demo:otp": "node server/get-demo-otp.js",
+    "admin:create": "node server/create-admin.js",
+    "test": "node server/test-auth-suite.js",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "firebase": "^12.19.0",
+    "i18next": "^26.6.0",
+    "lucide-react": "^1.52.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.1.10"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "vite": "^8.3.0"
+  }
+}

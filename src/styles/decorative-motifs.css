@@ -1,0 +1,802 @@
+/* =====================================================================
+   AAROH DECORATIVE MOTIFS & CULTURAL JOURNAL STYLING
+   Accents, dividers, swallow motifs, floral vines, editorial typography
+   ===================================================================== */
+
+/* Subtle background motif pattern for editorial sections */
+.bg-motif-pattern {
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(var(--border-strong) 0.75px, transparent 0.75px), 
+                    radial-gradient(var(--border-subtle) 0.75px, var(--bg-primary) 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* Cultural Journal Floral Ribbon Divider */
+.ornate-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 48px auto;
+  width: 100%;
+  max-width: 600px;
+  color: var(--accent-ochre);
+}
+
+.ornate-divider::before,
+.ornate-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong), transparent);
+}
+
+.ornate-divider-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent-ochre);
+  font-family: var(--font-serif);
+}
+
+/* Editorial Drop Caps */
+.drop-cap::first-letter {
+  font-family: var(--font-serif);
+  font-size: 3.6rem;
+  line-height: 0.85;
+  float: left;
+  margin: 6px 12px 0 0;
+  color: var(--accent-indigo);
+  font-weight: 700;
+}
+
+/* Artisan Voice Quote Card */
+.artisan-quote-ribbon {
+  position: relative;
+  background: var(--bg-surface);
+  border-left: 4px solid var(--accent-rose);
+  padding: 24px 28px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  box-shadow: var(--shadow-sm);
+  font-style: italic;
+  margin: 24px 0;
+}
+
+.artisan-quote-ribbon::before {
+  content: "“";
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  font-family: var(--font-serif);
+  font-size: 4rem;
+  color: var(--accent-rose);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Archival Historical Record Box */
+.archival-record-box {
+  background: var(--bg-surface-subtle);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-top: 24px;
+}
+
+.archival-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: var(--accent-olive);
+  margin-bottom: 12px;
+}
+
+/* Opening Gentle Animation */
+@keyframes fadeInSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gentleFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(1deg);
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-reveal {
+  animation: fadeInSlideUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-float {
+  animation: gentleFloat 5s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 3s ease-in-out infinite;
+}
+
+/* Motif Badges & Stamps */
+.craft-seal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: var(--accent-ochre-soft);
+  color: var(--accent-ochre);
+  border: 1px solid var(--accent-ochre);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.artisan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--accent-olive-soft);
+  color: var(--accent-olive);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* Swallow & Vine Hero Accents */
+.swallow-accent {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.75;
+  transition: transform var(--transition-base);
+}
+
+.hero-art-frame {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-strong);
+}
+
+.hero-art-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* =====================================================================
+   INTER-SECTION SCROLL TRANSITIONS & ANIMATIONS
+   Silky smooth reveals, parallax fades, and decorative bridges between
+   Opening Cover, Aaroh's Vision, and Explore Marketplace.
+   ===================================================================== */
+
+/* Floating Cultural Heritage Motifs Particles (Swallows, Lotuses, Marigolds) */
+.heritage-particle {
+  display: inline-block !important;
+  pointer-events: none;
+  will-change: transform;
+  filter: drop-shadow(0 4px 12px rgba(191, 135, 46, 0.45));
+}
+
+@keyframes floatSway1 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-28px) rotate(9deg) scale(1.12);
+  }
+}
+
+@keyframes floatSway2 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translateY(-34px) rotate(-11deg) scale(1.08);
+  }
+}
+
+@keyframes floatSway3 {
+  0%, 100% {
+    transform: translateY(0px) scale(0.92);
+  }
+  50% {
+    transform: translateY(-26px) scale(1.2) rotate(14deg);
+  }
+}
+
+.float-sway-1 { animation: floatSway1 ease-in-out infinite; }
+.float-sway-2 { animation: floatSway2 ease-in-out infinite; }
+.float-sway-3 { animation: floatSway3 ease-in-out infinite; }
+
+/* Breathing Golden Radiant Aura behind the Line-Art Centerpiece */
+@keyframes radiantHaloBreath {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.95);
+    opacity: 0.55;
+    filter: blur(32px);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.85;
+    filter: blur(48px);
+  }
+}
+
+.radiant-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 780px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(191, 135, 46, 0.65) 0%, rgba(198, 99, 118, 0.35) 45%, transparent 72%);
+  pointer-events: none;
+  z-index: 0;
+  animation: radiantHaloBreath 4s ease-in-out infinite;
+}
+
+/* Emblem Levitation */
+@keyframes emblemLevitate {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-emblem-float {
+  animation: emblemLevitate 4.5s ease-in-out infinite;
+}
+
+/* Infinite Cultural Craft Marquee */
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.craft-marquee-container {
+  overflow: hidden;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(26, 52, 89, 0.05), rgba(191, 135, 46, 0.12), rgba(26, 52, 89, 0.05));
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 0;
+  position: relative;
+  z-index: 10;
+}
+
+.craft-marquee-track {
+  display: flex;
+  white-space: nowrap;
+  width: max-content;
+  animation: marqueeScroll 32s linear infinite;
+  gap: 32px;
+}
+
+.craft-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+.marquee-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-indigo);
+  font-family: var(--font-serif);
+}
+
+/* Concentric Ripple Rings for Exploration Cues & Audio Controls */
+@keyframes ripplePulseRing {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.48);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+}
+
+.ripple-container {
+  position: relative;
+}
+
+.ripple-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 2px solid var(--accent-indigo);
+  pointer-events: none;
+  animation: ripplePulseRing 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+.ripple-ring-ochre {
+  border-color: var(--accent-ochre);
+}
+
+.ripple-ring-rose {
+  border-color: var(--accent-rose);
+}
+
+/* Gold Shimmer Sweep across seals and badges */
+@keyframes goldShimmerSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-badge::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: rotate(25deg);
+  animation: goldShimmerSweep 4.5s infinite linear;
+  pointer-events: none;
+}
+
+/* Dynamic Soundwave Equalizer for Oral Recordings */
+@keyframes soundwaveFluctuate {
+  0%, 100% {
+    transform: scaleY(0.2);
+  }
+  30% {
+    transform: scaleY(0.95);
+  }
+  60% {
+    transform: scaleY(0.45);
+  }
+  80% {
+    transform: scaleY(0.85);
+  }
+}
+
+.soundwave-visualizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+}
+
+.soundwave-bar {
+  display: inline-block;
+  width: 3px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--accent-indigo);
+  transform-origin: bottom center;
+  animation: soundwaveFluctuate 1.2s ease-in-out infinite;
+}
+
+.soundwave-bar:nth-child(1) { animation-delay: 0.1s; height: 12px; }
+.soundwave-bar:nth-child(2) { animation-delay: 0.25s; height: 18px; }
+.soundwave-bar:nth-child(3) { animation-delay: 0.4s; height: 15px; }
+.soundwave-bar:nth-child(4) { animation-delay: 0.18s; height: 20px; }
+.soundwave-bar:nth-child(5) { animation-delay: 0.35s; height: 14px; }
+
+/* Shopping Cart Bump Celebration Animation */
+@keyframes cartBump {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.35) rotate(-4deg); }
+  50% { transform: scale(0.92) rotate(3deg); }
+  75% { transform: scale(1.12) rotate(-1deg); }
+  100% { transform: scale(1); }
+}
+
+.animate-cart-bump {
+  animation: cartBump 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Button Metallic Sheen */
+.btn-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-sheen::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  transform: rotate(30deg);
+  transition: all 0.75s ease;
+  pointer-events: none;
+}
+
+.btn-sheen:hover::after {
+  left: 140%;
+}
+
+/* Living Pillar Interactive Hover Cards */
+.living-pillar-card {
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.32s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.32s ease;
+}
+
+.living-pillar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-indigo), var(--accent-ochre));
+  transition: width 0.35s ease;
+}
+
+.living-pillar-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(26, 52, 89, 0.10);
+  border-color: var(--border-strong);
+}
+
+.living-pillar-card:hover::before {
+  width: 100%;
+}
+
+@keyframes chevronPulse {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 0 rgba(26, 52, 89, 0.25);
+  }
+  50% {
+    transform: translateY(6px);
+    box-shadow: 0 0 0 10px rgba(26, 52, 89, 0);
+  }
+}
+
+@keyframes emblemUnveil {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes artisanPortraitUnveil {
+  0% {
+    opacity: 0;
+    transform: translateY(32px) rotate(-1deg);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotate(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes quoteFloatPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(16px);
+  }
+  70% {
+    transform: scale(1.03) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes categoryPillWave {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes softGlowBreath {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(191, 135, 46, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(191, 135, 46, 0.48);
+  }
+}
+
+/* Scroll Reveal Initial States */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-reveal-left {
+  opacity: 0;
+  transform: translateX(-36px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-left.is-revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-right {
+  opacity: 0;
+  transform: translateX(36px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-right.is-revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-scale {
+  opacity: 0;
+  transform: scale(0.93) translateY(20px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal-scale.is-revealed {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Stagger Cadence Delays */
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
+.delay-6 { transition-delay: 0.6s; }
+
+/* Transition Bridge: Cover to Vision (Curved Textile Flute) */
+.section-bridge-cover-to-vision {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.section-bridge-cover-to-vision svg {
+  position: relative;
+  display: block;
+  width: calc(100% + 1.3px);
+  height: 54px;
+}
+
+.section-bridge-cover-to-vision .shape-fill {
+  fill: var(--bg-primary);
+}
+
+/* Transition Bridge: Vision to Explore (Indian Heritage Lotus Divider) */
+.section-bridge-vision-to-explore {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.bridge-floral-line {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 520px;
+  color: var(--accent-ochre);
+}
+
+.bridge-floral-line::before,
+.bridge-floral-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-ochre), transparent);
+}
+
+.bridge-lotus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.8rem;
+  font-family: var(--font-serif);
+  color: var(--accent-indigo);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Floating Journey Progress Indicator (Desktop Dock) */
+.journey-dock {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  z-index: 950;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.3s ease;
+}
+
+@media (max-width: 900px) {
+  .journey-dock {
+    display: none; /* Hide on mobile so it doesn't obstruct interaction */
+  }
+}
+
+.journey-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 14px;
+}
+
+.journey-node:hover {
+  transform: scale(1.15);
+  color: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+}
+
+.journey-node.active {
+  background: var(--accent-indigo);
+  color: #FFF;
+  border-color: var(--accent-indigo);
+  box-shadow: 0 0 14px rgba(26, 52, 89, 0.35);
+  transform: scale(1.18);
+}
+
+.journey-tooltip {
+  position: absolute;
+  right: 44px;
+  white-space: nowrap;
+  padding: 4px 10px;
+  background: var(--text-primary);
+  color: var(--text-inverse);
+  font-size: 0.74rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(8px);
+  transition: all 0.2s ease;
+}
+
+.journey-node:hover .journey-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Reduced Motion Override for Accessibility */
+[data-reduced-motion="true"] .scroll-reveal,
+[data-reduced-motion="true"] .scroll-reveal-left,
+[data-reduced-motion="true"] .scroll-reveal-right,
+[data-reduced-motion="true"] .scroll-reveal-scale,
+[data-reduced-motion="true"] .animate-float,
+[data-reduced-motion="true"] .animate-reveal,
+[data-reduced-motion="true"] .animate-cart-bump,
+[data-reduced-motion="true"] .radiant-halo,
+[data-reduced-motion="true"] .ripple-ring,
+[data-reduced-motion="true"] .heritage-particle,
+[data-reduced-motion="true"] .shimmer-badge::after,
+[data-reduced-motion="true"] .btn-sheen::after,
+[data-reduced-motion="true"] .soundwave-bar {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+[data-reduced-motion="true"] .cultural-particles-container,
+[data-reduced-motion="true"] .ripple-ring {
+  display: none !important;
+}
+
