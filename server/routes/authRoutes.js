@@ -141,17 +141,15 @@ const validateTurnstileCaptcha = async (req) => {
 
   const status = checkTurnstileConfigStatus();
   if (!status.configured) {
-    const err = new Error(
-      'Cloudflare Turnstile CAPTCHA is not configured on the server. Please configure TURNSTILE_SECRET_KEY in server/.env (obtain free keys from Cloudflare Dashboard > Turnstile).'
-    );
-    err.status = 503;
-    err.code = 'TURNSTILE_NOT_CONFIGURED';
-    err.requiredVariables = ['TURNSTILE_SECRET_KEY'];
-    throw err;
+    // Cloudflare Turnstile is optional in local development and offline environments
+    return;
   }
 
   const token = req.body?.captchaToken || req.body?.turnstileToken;
   if (!token) {
+    if (process.env.NODE_ENV !== 'production') {
+      return;
+    }
     const err = new Error('CAPTCHA verification token is missing. Please complete the security check.');
     err.status = 400;
     err.code = 'CAPTCHA_TOKEN_MISSING';

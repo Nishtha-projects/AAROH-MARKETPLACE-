@@ -39,7 +39,14 @@ export const ExploreAarohSection = ({
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedStory, setSelectedStory] = useState(null);
 
-  const categories = ['All', 'Painting', 'Pottery', 'Metalcraft', 'Handloom & Textiles', 'Embroidery'];
+  const categoryOptions = [
+    { id: 'All', key: 'filter_all' },
+    { id: 'Painting', key: 'filter_painting' },
+    { id: 'Pottery', key: 'filter_pottery' },
+    { id: 'Metalcraft', key: 'filter_metal' },
+    { id: 'Handloom & Textiles', key: 'filter_textiles' },
+    { id: 'Embroidery', key: 'filter_embroidery' }
+  ];
   const regions = ['All', 'Bihar', 'Rajasthan', 'Chhattisgarh', 'Gujarat', 'Odisha', 'Tamil Nadu'];
 
   const filteredProducts = useMemo(() => {
@@ -58,6 +65,7 @@ export const ExploreAarohSection = ({
         if (selectedCategory === 'Pottery' && !product.craftName.toLowerCase().includes('pottery')) return false;
         if (selectedCategory === 'Metalcraft' && !product.craftName.toLowerCase().includes('metal')) return false;
         if (selectedCategory === 'Handloom & Textiles' && !product.craftName.toLowerCase().includes('rogan') && !product.craftName.toLowerCase().includes('textile')) return false;
+        if (selectedCategory === 'Embroidery' && !product.craftName.toLowerCase().includes('embroidery')) return false;
       }
 
       if (selectedRegion !== 'All') {
@@ -87,7 +95,7 @@ export const ExploreAarohSection = ({
         >
           <div className="craft-seal-badge" style={{ marginBottom: '12px' }}>
             <Sparkles size={13} />
-            <span>Living Craft Marketplace & Journal</span>
+            <span>{t('hero_badge')}</span>
           </div>
           <h2 style={{ fontSize: 'clamp(2rem, 3.8vw, 2.8rem)', marginBottom: '14px' }}>
             {t('explore_title')}
@@ -108,23 +116,23 @@ export const ExploreAarohSection = ({
             marginBottom: '28px'
           }}
         >
-          {categories.map((cat, idx) => (
+          {categoryOptions.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
               style={{
                 padding: '8px 18px',
                 borderRadius: 'var(--radius-full)',
                 fontSize: '0.88rem',
                 fontWeight: 600,
-                backgroundColor: selectedCategory === cat ? 'var(--accent-indigo)' : 'var(--bg-surface-subtle)',
-                color: selectedCategory === cat ? '#FFF' : 'var(--text-secondary)',
+                backgroundColor: selectedCategory === cat.id ? 'var(--accent-indigo)' : 'var(--bg-surface-subtle)',
+                color: selectedCategory === cat.id ? '#FFF' : 'var(--text-secondary)',
                 border: '1px solid var(--border-subtle)',
                 cursor: 'pointer',
                 transition: 'all var(--transition-fast)'
               }}
             >
-              {cat === 'All' ? t('filter_all') : cat}
+              {t(cat.key) || cat.id}
             </button>
           ))}
         </div>
@@ -150,7 +158,7 @@ export const ExploreAarohSection = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by craft, region, or master artisan..."
+              placeholder={t('search_placeholder')}
               className="form-input"
               style={{ paddingLeft: '38px', paddingRight: '12px', fontSize: '0.9rem' }}
             />
@@ -163,7 +171,7 @@ export const ExploreAarohSection = ({
               className="form-select"
               style={{ padding: '10px 14px', fontSize: '0.88rem' }}
             >
-              <option value="All">All States & Regions</option>
+              <option value="All">{t('filter_all_regions')}</option>
               {regions.filter(r => r !== 'All').map(r => (
                 <option key={r} value={r}>{r}</option>
               ))}
@@ -265,7 +273,7 @@ export const ExploreAarohSection = ({
                   justifyContent: 'space-between'
                 }}>
                   <div>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Artisan Price</span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>{t('artisan_price')}</span>
                     <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>
                       ₹{product.price.toLocaleString('en-IN')}
                     </span>
@@ -296,12 +304,12 @@ export const ExploreAarohSection = ({
             <div>
               <div className="craft-seal-badge" style={{ marginBottom: '8px' }}>
                 <BookOpen size={12} />
-                <span>Living Oral Archives</span>
+                <span>{t('stories_badge')}</span>
               </div>
-              <h3 style={{ fontSize: '1.6rem', margin: 0 }}>Stories from the Workshop Floor</h3>
+              <h3 style={{ fontSize: '1.6rem', margin: 0 }}>{t('stories_title')}</h3>
             </div>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: 0, maxWidth: '400px' }}>
-              Uncut oral histories recorded with hereditary master artisans.
+              {t('stories_sub')}
             </p>
           </div>
 

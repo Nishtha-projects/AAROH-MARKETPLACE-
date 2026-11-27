@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
+  ShieldCheck, 
   Smartphone, 
   Mail, 
+  Sparkles, 
   User, 
   Lock, 
   Eye, 
@@ -14,761 +16,310 @@ import {
   Sun,
   Award,
   ArrowRight,
-  RefreshCw
+  KeyRound,
+  RotateCcw
 } from 'lucide-react';
 import { CulturalParticles } from './CulturalParticles';
 import { 
-  signup,
-  verifySignupOtp,
-  resendSignupOtp,
-  sendLoginOtp,
-  verifyLoginOtp,
-  verifyEmailOtp,
-  verifyPhoneOtp,
-  resendEmailOtp,
-  resendPhoneOtp,
-  login,
-  forgotPassword,
-  verifyPasswordResetOtp,
-  resetPassword,
-  initiateGoogleLogin,
-  initiateMicrosoftLogin
+  requestEmailOtp, 
+  verifyOtpCode, 
+  completePasswordRegistration, 
+  loginWithCredentials, 
+  resetForgottenPassword 
 } from '../services/apiAuth';
-import { useTranslation } from 'react-i18next';
 import { TurnstileWidget } from './TurnstileWidget';
-
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-  </svg>
-);
-
-const MicrosoftIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true" style={{ flexShrink: 0 }}>
-    <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-    <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-    <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-    <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-  </svg>
-);
 
 export const LoginPage = ({
   lang,
-  setLang,
   onOpenLanguageModal,
   themeMode,
   setThemeMode,
   onLoginSuccess,
   onReturnToHome
 }) => {
-  const { t, i18n } = useTranslation();
-  const [captchaToken, setCaptchaToken] = useState('');
-  const [oauthLoading, setOauthLoading] = useState(null); // 'google' | 'microsoft' | null
+  // Primary Persona / Role
+  const [userRole, setUserRole] = useState('customer'); // 'customer' | 'artisan'
 
-  // Primary Persona / Role: 'customer' | 'artisan'
-  const [userRole, setUserRole] = useState('customer');
+  // Auth Method Tabs: 'email' | 'phone' | 'demo'
+  const [authMethod, setAuthMethod] = useState('email'); 
+  
+  // Email Sub-modes: 'signin' | 'register' | 'forgot' | 'passwordless'
+  const [emailMode, setEmailMode] = useState('signin'); 
 
-  // Main Auth Tab: 'signin' | 'signup' | 'verify' | 'forgot' | 'demo'
-  const [authTab, setAuthTab] = useState('signin');
+  // Multi-step Registration State
+  // Step 1: Request & Verify Email OTP
+  // Step 2: Set Name, Phone, and Password
+  const [regStep, setRegStep] = useState(1); 
+  const [regActionToken, setRegActionToken] = useState(null);
 
-  // ==========================================
-  // SIGNUP FORM STATE (Email OR Mobile Phone)
-  // ==========================================
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [showSignupConfirmPassword, setShowSignupConfirmPassword] = useState(false);
-
-  // ==========================================
-  // VERIFICATION SCREEN STATE (Unified Contact)
-  // ==========================================
-  const [pendingUserId, setPendingUserId] = useState(null);
-  const [verificationTarget, setVerificationTarget] = useState('');
-  const [verificationContactType, setVerificationContactType] = useState('email');
-  const [verificationEmail, setVerificationEmail] = useState('');
-  const [verificationPhone, setVerificationPhone] = useState('');
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [verifiedUserProfile, setVerifiedUserProfile] = useState(null);
-  const [isDemoModeActive, setIsDemoModeActive] = useState(false);
-  const [demoCodesList, setDemoCodesList] = useState([]);
-
-  // Unified Signup OTP Input
-  const [signupOtpCode, setSignupOtpCode] = useState('');
-  const [signupOtpDigits, setSignupOtpDigits] = useState(['', '', '', '', '', '']);
-  const [signupOtpCountdown, setSignupOtpCountdown] = useState(60);
-  const [isVerifyingSignupOtp, setIsVerifyingSignupOtp] = useState(false);
-  const [isResendingSignupOtp, setIsResendingSignupOtp] = useState(false);
-  const signupOtpInputRefs = useRef([]);
-
-  // Email OTP Input (For dual legacy accounts)
-  const [emailOtpCode, setEmailOtpCode] = useState('');
-  const [emailOtpDigits, setEmailOtpDigits] = useState(['', '', '', '', '', '']);
-  const [emailCountdown, setEmailCountdown] = useState(60);
-  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
-  const emailInputRefs = useRef([]);
-
-  // Phone OTP Input (For dual legacy accounts)
-  const [phoneOtpCode, setPhoneOtpCode] = useState('');
-  const [phoneOtpDigits, setPhoneOtpDigits] = useState(['', '', '', '', '', '']);
-  const [phoneCountdown, setPhoneCountdown] = useState(60);
-  const [isVerifyingPhone, setIsVerifyingPhone] = useState(false);
-  const [isResendingPhone, setIsResendingPhone] = useState(false);
-  const phoneInputRefs = useRef([]);
-
-  // ==========================================
-  // LOGIN FORM STATE (OTP OR Password)
-  // ==========================================
-  const [loginIdentifier, setLoginIdentifier] = useState('');
-  const [loginMode, setLoginMode] = useState('otp'); // 'otp' | 'password'
-  const [loginOtpStep, setLoginOtpStep] = useState(1); // 1: enter identifier, 2: enter 6-digit OTP
-  const [loginOtpDigits, setLoginOtpDigits] = useState(['', '', '', '', '', '']);
-  const [loginOtpCode, setLoginOtpCode] = useState('');
-  const [loginOtpCountdown, setLoginOtpCountdown] = useState(60);
-  const [loginOtpTarget, setLoginOtpTarget] = useState('');
-  const [loginOtpContactType, setLoginOtpContactType] = useState('email');
-  const [isSendingLoginOtp, setIsSendingLoginOtp] = useState(false);
-  const [isVerifyingLoginOtp, setIsVerifyingLoginOtp] = useState(false);
-  const loginOtpInputRefs = useRef([]);
-
-  const [loginPassword, setLoginPassword] = useState('');
-  const [showLoginPassword, setShowLoginPassword] = useState(false);
-
-  // ==========================================
-  // FORGOT PASSWORD FLOW STATE
-  // ==========================================
+  // Multi-step Forgot Password State
+  // Step 1: Enter Email & Request OTP
+  // Step 2: Verify OTP
+  // Step 3: Enter New Password & Confirm
   const [forgotStep, setForgotStep] = useState(1);
-  const [forgotIdentifier, setForgotIdentifier] = useState('');
-  const [forgotOtpCode, setForgotOtpCode] = useState('');
-  const [forgotOtpDigits, setForgotOtpDigits] = useState(['', '', '', '', '', '']);
-  const [forgotCountdown, setForgotCountdown] = useState(60);
   const [forgotActionToken, setForgotActionToken] = useState(null);
-  const [forgotNewPassword, setForgotNewPassword] = useState('');
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
-  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
-  const forgotInputRefs = useRef([]);
 
-  // UI Feedback
+  // Common Form Fields
+  const [email, setEmail] = useState('');
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [assignedUserId, setAssignedUserId] = useState(null);
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Password Confirmation & Reset Fields
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+
+  // OTP Fields
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const otpInputRefs = useRef([]);
+
+  // UI / Feedback State
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  // ==========================================
-  // STRONG PASSWORD VALIDATION CHECKERS
-  // ==========================================
-  const checkPasswordStrength = (pwd) => {
-    const val = pwd || '';
-    return {
-      hasMinLength: val.length >= 8,
-      hasUpper: /[A-Z]/.test(val),
-      hasLower: /[a-z]/.test(val),
-      hasNumber: /[0-9]/.test(val),
-      hasSpecial: /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(val),
-      isStrong: val.length >= 8 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val) && /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(val)
-    };
-  };
+  // Live password validation for new password creation
+  const targetPasswordToCheck = emailMode === 'forgot' ? newPassword : password;
+  const hasUpper = /[A-Z]/.test(targetPasswordToCheck);
+  const hasLower = /[a-z]/.test(targetPasswordToCheck);
+  const hasNumber = /[0-9]/.test(targetPasswordToCheck);
+  const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(targetPasswordToCheck);
+  const isValidLength = targetPasswordToCheck.length >= 4 && targetPasswordToCheck.length <= 8;
+  const isPasswordPolicySatisfied = hasUpper && hasLower && hasNumber && hasSpecial && isValidLength;
 
-  const signupStrength = checkPasswordStrength(signupPassword);
-  const forgotStrength = checkPasswordStrength(forgotNewPassword);
-
-  // Timers for resend countdowns
+  // Countdown timer for resending OTP
   useEffect(() => {
     let timer;
-    if (emailCountdown > 0) {
-      timer = setInterval(() => setEmailCountdown((p) => p - 1), 1000);
+    if (otpCountdown > 0) {
+      timer = setInterval(() => {
+        setOtpCountdown((prev) => prev - 1);
+      }, 1000);
     }
     return () => clearInterval(timer);
-  }, [emailCountdown]);
+  }, [otpCountdown]);
 
-  useEffect(() => {
-    let timer;
-    if (phoneCountdown > 0) {
-      timer = setInterval(() => setPhoneCountdown((p) => p - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [phoneCountdown]);
-
-  useEffect(() => {
-    let timer;
-    if (signupOtpCountdown > 0) {
-      timer = setInterval(() => setSignupOtpCountdown((p) => p - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [signupOtpCountdown]);
-
-  useEffect(() => {
-    let timer;
-    if (loginOtpCountdown > 0) {
-      timer = setInterval(() => setLoginOtpCountdown((p) => p - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [loginOtpCountdown]);
-
-  useEffect(() => {
-    let timer;
-    if (forgotCountdown > 0) {
-      timer = setInterval(() => setForgotCountdown((p) => p - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [forgotCountdown]);
-
-  // Check URL query parameters for OAuth error responses
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const err = params.get('error');
-      if (err) {
-        if (err === 'GOOGLE_OAUTH_NOT_CONFIGURED') {
-          setErrorMessage('Google Sign-In is not configured yet on the backend. Please add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in server/.env (see AUTH_SETUP_GUIDE.md).');
-        } else if (err === 'MICROSOFT_OAUTH_NOT_CONFIGURED') {
-          setErrorMessage('Microsoft Sign-In is not configured yet on the backend. Please add MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in server/.env (see AUTH_SETUP_GUIDE.md).');
-        } else if (err.toLowerCase().includes('denied') || err === 'access_denied') {
-          setErrorMessage('Sign-in was cancelled or access was denied by provider.');
-        } else {
-          setErrorMessage(decodeURIComponent(err));
-        }
-      }
-    } catch {}
-  }, []);
-
-  const handleGoogleOAuth = async () => {
-    try {
-      setOauthLoading('google');
-      setErrorMessage(null);
-      await initiateGoogleLogin({ role: userRole });
-    } catch (err) {
-      setOauthLoading(null);
-      if (err.code === 'GOOGLE_OAUTH_NOT_CONFIGURED') {
-        setErrorMessage('Google Sign-In is not configured yet. Please configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in server/.env (see AUTH_SETUP_GUIDE.md).');
-      } else {
-        setErrorMessage(err.message || 'Failed to initiate Google Sign-In.');
-      }
-    }
-  };
-
-  const handleMicrosoftOAuth = async () => {
-    try {
-      setOauthLoading('microsoft');
-      setErrorMessage(null);
-      await initiateMicrosoftLogin({ role: userRole });
-    } catch (err) {
-      setOauthLoading(null);
-      if (err.code === 'MICROSOFT_OAUTH_NOT_CONFIGURED') {
-        setErrorMessage('Microsoft Sign-In is not configured yet. Please configure MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in server/.env (see AUTH_SETUP_GUIDE.md).');
-      } else {
-        setErrorMessage(err.message || 'Failed to initiate Microsoft Sign-In.');
-      }
-    }
-  };
-
-  // Tab Switcher
-  const handleSwitchTab = (tab) => {
-    setAuthTab(tab);
-    setCaptchaToken('');
+  // Reset errors and sub-flows on tab change
+  const handleSwitchAuthMethod = (method) => {
+    setAuthMethod(method);
     setErrorMessage(null);
     setSuccessMessage(null);
-    if (tab === 'forgot') setForgotStep(1);
+    setIsOtpSent(false);
+    setOtpDigits(['', '', '', '', '', '']);
+    setRegStep(1);
+    setForgotStep(1);
+    setAssignedUserId(null);
+    setCaptchaToken('');
   };
 
-  // Helper for high-visibility 6-box OTP changes
-  const handleBoxChange = (digits, setDigits, refs, index, val) => {
-    const clean = (val || '').replace(/\D/g, '');
-    if (!clean) {
-      const updated = [...digits];
-      updated[index] = '';
-      setDigits(updated);
-      return;
-    }
-
-    const updated = [...digits];
-    if (clean.length > 1) {
-      // Pasted or typed multi-digit sequence: distribute starting from current index
-      for (let i = 0; i < clean.length && (index + i) < 6; i++) {
-        updated[index + i] = clean[i];
-      }
-      setDigits(updated);
-      const nextIdx = Math.min(index + clean.length, 5);
-      refs.current[nextIdx]?.focus();
-    } else {
-      updated[index] = clean[0];
-      setDigits(updated);
-      if (index < 5) {
-        refs.current[index + 1]?.focus();
-      }
-    }
+  const handleSwitchEmailMode = (mode) => {
+    setEmailMode(mode);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setIsOtpSent(false);
+    setOtpDigits(['', '', '', '', '', '']);
+    setRegStep(1);
+    setForgotStep(1);
+    setAssignedUserId(null);
+    setCaptchaToken('');
   };
 
-  const handleBoxKeyDown = (digits, setDigits, refs, index, e) => {
-    if (e.key === 'Backspace') {
-      if (!digits[index] && index > 0) {
-        e.preventDefault();
-        const updated = [...digits];
-        updated[index - 1] = '';
-        setDigits(updated);
-        refs.current[index - 1]?.focus();
-      } else if (digits[index]) {
-        const updated = [...digits];
-        updated[index] = '';
-        setDigits(updated);
-      }
-    } else if (e.key === 'ArrowLeft' && index > 0) {
-      e.preventDefault();
-      refs.current[index - 1]?.focus();
-    } else if (e.key === 'ArrowRight' && index < 5) {
-      e.preventDefault();
-      refs.current[index + 1]?.focus();
+  // OTP Input Handlers (6-digit boxes)
+  const handleOtpBoxChange = (index, value) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const updated = [...otpDigits];
+    updated[index] = digit;
+    setOtpDigits(updated);
+
+    if (digit && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
     }
   };
 
-  const handleBoxPaste = (setDigits, refs, e) => {
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePasteOtp = (e) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (!pasteData) return;
+
     const updated = ['', '', '', '', '', ''];
-    for (let i = 0; i < pasteData.length; i++) updated[i] = pasteData[i];
-    setDigits(updated);
-    const nextIdx = Math.min(pasteData.length, 5);
-    refs.current[nextIdx]?.focus();
+    for (let i = 0; i < pasteData.length; i++) {
+      updated[i] = pasteData[i];
+    }
+    setOtpDigits(updated);
+
+    const nextIndex = Math.min(pasteData.length, 5);
+    otpInputRefs.current[nextIndex]?.focus();
   };
 
-  // ============================================================================
-  // 1. SIGNUP SUBMISSION (EMAIL, MOBILE PHONE, OR BOTH)
-  // ============================================================================
-  const handleSignupSubmit = async (e) => {
+  // ==========================================
+  // FLOW 1: EMAIL / USER ID & PASSWORD SIGN IN
+  // ==========================================
+  const handlePasswordLogin = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!fullName.trim() || fullName.trim().length < 2) {
+    const targetIdentifier = (loginIdentifier || email || '').trim();
+    if (!targetIdentifier || !password) {
+      setErrorMessage("Please enter both Email / User ID and password.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await loginWithCredentials(targetIdentifier, password, captchaToken);
+      setSuccessMessage(res.message || "Login successful! Entering Aaroh...");
+      setTimeout(() => {
+        onLoginSuccess(res.user);
+      }, 500);
+    } catch (err) {
+      setErrorMessage(err.message || "Invalid credentials.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ==========================================
+  // FLOW 2: SIGNUP FLOW
+  // Name + Email + Phone → Send Real Email OTP → Verify OTP → Unique User ID → Set Password → Create Account
+  // ==========================================
+  const handleSendRegOtp = async (e) => {
+    e?.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!displayName || !displayName.trim()) {
       setErrorMessage("Please enter your full name.");
       return;
     }
 
-    const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanPhone = (phone || '').trim();
-
-    if (!cleanEmail && !cleanPhone) {
-      setErrorMessage("Please enter at least an email address or a mobile phone number.");
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      setErrorMessage("Please provide a valid email address.");
       return;
     }
 
-    if (cleanEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(cleanEmail)) {
-        setErrorMessage("Please enter a valid email address.");
-        return;
-      }
-    }
-
-    if (cleanPhone) {
-      const digitsOnly = cleanPhone.replace(/\D/g, '');
-      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
-        setErrorMessage("Please enter a valid mobile phone number with country code (e.g. +91 91757 02555).");
-        return;
-      }
-    }
-
-    if (!signupStrength.isStrong) {
-      setErrorMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character.");
+    if (!phone || !phone.trim()) {
+      setErrorMessage("Please enter your mobile phone number.");
       return;
     }
-    if (signupPassword !== signupConfirmPassword) {
+
+    try {
+      setIsLoading(true);
+      const res = await requestEmailOtp(email, 'signup', displayName.trim(), captchaToken);
+      setIsOtpSent(true);
+      setOtpCountdown(res.cooldownSeconds || 60);
+      setSuccessMessage(`A real single-use verification code was dispatched to ${email}. Please check your email inbox.`);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+    } catch (err) {
+      setErrorMessage(err.message || "Failed to dispatch verification email.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyRegOtp = async (e) => {
+    e?.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const enteredCode = otpDigits.join('');
+    if (enteredCode.length !== 6) {
+      setErrorMessage("Please enter the complete 6-digit verification code from your email.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await verifyOtpCode(email, enteredCode, 'signup');
+      setRegActionToken(res.actionToken);
+      if (res.uniqueUserId) {
+        setAssignedUserId(res.uniqueUserId);
+      }
+      setRegStep(2); // Advance to Password Creation & Account Finalization
+      setSuccessMessage(
+        res.uniqueUserId 
+          ? `Email verified! Your unique Aaroh User ID is ${res.uniqueUserId}. Now set your password.`
+          : "Email verified successfully! Now create your secure password."
+      );
+    } catch (err) {
+      setErrorMessage(err.message || "Invalid verification code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCompleteRegistration = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!isPasswordPolicySatisfied) {
+      setErrorMessage("Please satisfy all password criteria (1 uppercase, 1 lowercase, 1 number, 1 special character, maximum 8 characters).");
+      return;
+    }
+
+    if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
     }
 
     try {
       setIsLoading(true);
-      const res = await signup({
-        name: fullName.trim(),
-        email: cleanEmail || undefined,
-        phone_number: cleanPhone || undefined,
-        password: signupPassword,
-        confirmPassword: signupConfirmPassword,
-        role: userRole,
-        captchaToken
+      const res = await completePasswordRegistration({
+        actionToken: regActionToken,
+        name: displayName.trim(),
+        phone: phone.trim(),
+        password,
+        role: userRole
       });
 
-      setPendingUserId(res.userId);
-      setVerificationTarget(res.identifier || cleanEmail || cleanPhone);
-      setVerificationContactType(res.contactType || (cleanEmail && cleanPhone ? 'both' : (cleanEmail ? 'email' : 'phone')));
-      setVerificationEmail(res.email || cleanEmail || '');
-      setVerificationPhone(res.phone_number || cleanPhone || '');
-      setIsEmailVerified(Boolean(res.email_verified));
-      setIsPhoneVerified(Boolean(res.phone_verified));
-
-      setSignupOtpCountdown(60);
-      setSignupOtpCode('');
-      setSignupOtpDigits(['', '', '', '', '', '']);
-      setEmailCountdown(60);
-      setPhoneCountdown(60);
-      setEmailOtpCode('');
-      setPhoneOtpCode('');
-      setEmailOtpDigits(['', '', '', '', '', '']);
-      setPhoneOtpDigits(['', '', '', '', '', '']);
-
-      setAuthTab('verify');
-      setIsDemoModeActive(false);
-
-      if (cleanEmail && cleanPhone) {
-        setSuccessMessage("Account created! Real verification codes have been dispatched to both your email and phone.");
-      } else if (cleanEmail) {
-        setSuccessMessage(`Account created! A real 6-digit verification code has been dispatched to ${res.email || cleanEmail}. Valid for 5 minutes.`);
-      } else {
-        setSuccessMessage(`Account created! A real 6-digit SMS verification code has been dispatched via Twilio to ${res.phone_number || cleanPhone}.`);
-      }
+      setSuccessMessage(res.message || "Account registered successfully! Entering Aaroh...");
+      setTimeout(() => {
+        onLoginSuccess(res.user);
+      }, 600);
     } catch (err) {
-      if (err.status === 409) {
-        setErrorMessage("An account already exists with this email address or phone number. Please login instead.");
-      } else {
-        setErrorMessage(err.message || "Failed to create account. Please check your details.");
-      }
+      setErrorMessage(err.message || "Failed to complete account registration.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // ============================================================================
-  // 1.1 UNIFIED SIGNUP OTP VERIFY & RESEND
-  // ============================================================================
-  const handleVerifySignupOtp = async (e) => {
+  // ==========================================
+  // FLOW 3: FORGOT PASSWORD WITH EMAIL OTP
+  // ==========================================
+  const handleSendForgotOtp = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const code = (signupOtpCode || signupOtpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMessage("Please enter the complete 6-digit verification code.");
-      return;
-    }
-
-    try {
-      setIsVerifyingSignupOtp(true);
-      const res = await verifySignupOtp({
-        identifier: verificationTarget || verificationEmail || verificationPhone,
-        userId: pendingUserId,
-        code
-      });
-
-      setSuccessMessage("Verification successful! Welcome to Aaroh.");
-      if (res.user) {
-        setVerifiedUserProfile(res.user);
-        setTimeout(() => {
-          onLoginSuccess(res.user);
-        }, 1000);
-      }
-    } catch (err) {
-      setErrorMessage(err.message || "Invalid or expired verification code.");
-    } finally {
-      setIsVerifyingSignupOtp(false);
-    }
-  };
-
-  const handleResendSignupOtp = async () => {
-    setErrorMessage(null);
-    setSuccessMessage(null);
-    try {
-      setIsResendingSignupOtp(true);
-      const res = await resendSignupOtp({
-        identifier: verificationTarget || verificationEmail || verificationPhone,
-        userId: pendingUserId,
-        captchaToken
-      });
-      setSignupOtpCountdown(res.cooldownSeconds || 60);
-      setSignupOtpCode('');
-      setSignupOtpDigits(['', '', '', '', '', '']);
-      if (res.isDemo) {
-        setSuccessMessage("Development demo code generated (Check backend terminal for code).");
-      } else {
-        setSuccessMessage(res.message || `Verification code resent to ${verificationTarget || verificationEmail || verificationPhone}.`);
-      }
-      signupOtpInputRefs.current[0]?.focus();
-    } catch (err) {
-      setErrorMessage(err.message || "Failed to resend verification code.");
-    } finally {
-      setIsResendingSignupOtp(false);
-    }
-  };
-
-  // ============================================================================
-  // 2. EMAIL OTP VERIFY & RESEND (For Legacy Dual Users)
-  // ============================================================================
-  const handleVerifyEmail = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const code = (emailOtpCode || emailOtpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMessage("Please enter the complete 6-digit email verification code.");
-      return;
-    }
-
-    try {
-      setIsVerifyingEmail(true);
-      const res = await verifyEmailOtp({
-        email: verificationEmail,
-        userId: pendingUserId,
-        code
-      });
-
-      setIsEmailVerified(true);
-      setSuccessMessage("Email address verified successfully!");
-
-      if (res.fully_verified && res.user) {
-        setVerifiedUserProfile(res.user);
-        setTimeout(() => {
-          onLoginSuccess(res.user);
-        }, 1200);
-      }
-    } catch (err) {
-      setErrorMessage(err.message || "Email verification code is invalid or has expired.");
-    } finally {
-      setIsVerifyingEmail(false);
-    }
-  };
-
-  const handleResendEmail = async () => {
-    setErrorMessage(null);
-    setSuccessMessage(null);
-    try {
-      setIsResendingEmail(true);
-      const res = await resendEmailOtp({
-        email: verificationEmail,
-        userId: pendingUserId,
-        captchaToken
-      });
-      setEmailCountdown(res.cooldownSeconds || 60);
-      setEmailOtpCode('');
-      setEmailOtpDigits(['', '', '', '', '', '']);
-      if (res.isDemo) {
-        setSuccessMessage("Development demo code generated; no email was sent (Check terminal for code).");
-      } else {
-        setSuccessMessage(`Email sent to ${verificationEmail}. Please check your inbox.`);
-      }
-      emailInputRefs.current[0]?.focus();
-    } catch (err) {
-      setErrorMessage(err.message || "Failed to resend email code.");
-    } finally {
-      setIsResendingEmail(false);
-    }
-  };
-
-  // ============================================================================
-  // 3. PHONE SMS OTP VERIFY & RESEND (For Legacy Dual Users)
-  // ============================================================================
-  const handleVerifyPhone = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const code = (phoneOtpCode || phoneOtpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMessage("Please enter the complete 6-digit SMS verification code.");
-      return;
-    }
-
-    try {
-      setIsVerifyingPhone(true);
-      const res = await verifyPhoneOtp({
-        phone_number: verificationPhone,
-        userId: pendingUserId,
-        code
-      });
-
-      setIsPhoneVerified(true);
-      setSuccessMessage("Phone number verified successfully!");
-
-      if (res.fully_verified && res.user) {
-        setVerifiedUserProfile(res.user);
-        setTimeout(() => {
-          onLoginSuccess(res.user);
-        }, 1200);
-      }
-    } catch (err) {
-      setErrorMessage(err.message || "SMS verification code is invalid or has expired.");
-    } finally {
-      setIsVerifyingPhone(false);
-    }
-  };
-
-  const handleResendPhone = async () => {
-    setErrorMessage(null);
-    setSuccessMessage(null);
-    try {
-      setIsResendingPhone(true);
-      const res = await resendPhoneOtp({
-        phone_number: verificationPhone,
-        userId: pendingUserId,
-        captchaToken
-      });
-      setPhoneCountdown(res.cooldownSeconds || 60);
-      setPhoneOtpCode('');
-      setPhoneOtpDigits(['', '', '', '', '', '']);
-      if (res.isDemo) {
-        setSuccessMessage("Development demo code generated; no SMS was sent (Check terminal for code).");
-      } else {
-        setSuccessMessage(`A new verification code has been dispatched via SMS to ${verificationPhone}.`);
-      }
-      phoneInputRefs.current[0]?.focus();
-    } catch (err) {
-      setErrorMessage(err.message || "Failed to resend phone verification code.");
-    } finally {
-      setIsResendingPhone(false);
-    }
-  };
-
-  // ============================================================================
-  // 3.1 PASSWORDLESS LOGIN OTP (EMAIL OR PHONE)
-  // ============================================================================
-  const handleSendLoginOtp = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const targetId = (loginIdentifier || '').trim();
-    if (!targetId) {
-      setErrorMessage("Please enter your registered email address or mobile phone number.");
-      return;
-    }
-
-    try {
-      setIsSendingLoginOtp(true);
-      const res = await sendLoginOtp({
-        identifier: targetId,
-        captchaToken
-      });
-
-      setLoginOtpTarget(res.target || targetId);
-      setLoginOtpContactType(res.contactType || 'email');
-      setLoginOtpStep(2);
-      setLoginOtpCountdown(res.cooldownSeconds || 60);
-      setLoginOtpCode('');
-      setLoginOtpDigits(['', '', '', '', '', '']);
-      if (res.isDemo) {
-        setSuccessMessage("Development demo code generated (Check backend terminal for 6-digit code).");
-      } else {
-        setSuccessMessage(res.message || `Verification code sent to ${res.target || targetId}`);
-      }
-      setTimeout(() => loginOtpInputRefs.current[0]?.focus(), 150);
-    } catch (err) {
-      if (err.requiresVerification || err.status === 403) {
-        setPendingUserId(err.data?.userId);
-        setVerificationTarget(targetId);
-        setVerificationEmail(err.data?.email || '');
-        setVerificationPhone(err.data?.phone_number || '');
-        setAuthTab('verify');
-        setErrorMessage("Please complete your account verification before logging in.");
-      } else {
-        setErrorMessage(err.message || "Failed to dispatch verification code.");
-      }
-    } finally {
-      setIsSendingLoginOtp(false);
-    }
-  };
-
-  const handleVerifyLoginOtp = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const code = (loginOtpCode || loginOtpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMessage("Please enter the complete 6-digit verification code.");
-      return;
-    }
-
-    try {
-      setIsVerifyingLoginOtp(true);
-      const res = await verifyLoginOtp({
-        identifier: loginIdentifier.trim(),
-        code
-      });
-
-      setSuccessMessage(res.message || "Sign in successful! Entering Aaroh...");
-      setTimeout(() => {
-        onLoginSuccess(res.user);
-      }, 500);
-    } catch (err) {
-      setErrorMessage(err.message || "Invalid or expired verification code.");
-    } finally {
-      setIsVerifyingLoginOtp(false);
-    }
-  };
-
-  // ============================================================================
-  // 4. LOGIN SUBMISSION
-  // ============================================================================
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    const targetId = (loginIdentifier || '').trim();
-    if (!targetId || !loginPassword) {
-      setErrorMessage("Please enter your Email or Phone number and password.");
+    if (!email || !email.trim()) {
+      setErrorMessage("Please enter your registered Email Address or User ID.");
       return;
     }
 
     try {
       setIsLoading(true);
-      const res = await login({
-        identifier: targetId,
-        password: loginPassword,
-        captchaToken
-      });
-
-      setSuccessMessage(res.message || "Login successful! Entering Aaroh...");
-      setTimeout(() => {
-        onLoginSuccess(res.user);
-      }, 500);
-    } catch (err) {
-      if (err.requiresVerification || err.status === 403) {
-        setPendingUserId(err.data?.userId);
-        setVerificationEmail(err.data?.email || '');
-        setVerificationPhone(err.data?.phone_number || '');
-        setIsEmailVerified(Boolean(err.data?.emailVerified));
-        setIsPhoneVerified(Boolean(err.data?.phoneVerified));
-
-        setAuthTab('verify');
-        setErrorMessage("Please complete your account verification before logging in.");
-      } else {
-        setErrorMessage(err.message || "Invalid Email, Phone number, or password.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ============================================================================
-  // 5. FORGOT PASSWORD FLOW
-  // ============================================================================
-  const handleForgotStep1Submit = async (e) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessMessage(null);
-
-    if (!forgotIdentifier.trim()) {
-      setErrorMessage("Please enter your registered Email Address or Phone Number.");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const res = await forgotPassword({ identifier: forgotIdentifier.trim(), captchaToken });
+      const res = await requestEmailOtp(email.trim(), 'forgot_password', '', captchaToken);
       setForgotStep(2);
-      setForgotCountdown(res.cooldownSeconds || 60);
-      setForgotOtpCode('');
-      setForgotOtpDigits(['', '', '', '', '', '']);
-      setSuccessMessage(res.message || "If an account matches those details, a verification code has been dispatched.");
-      setTimeout(() => forgotInputRefs.current[0]?.focus(), 150);
+      setOtpCountdown(res.cooldownSeconds || 60);
+      setSuccessMessage(res.message || `Password reset code sent to ${email}. Please check your inbox.`);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
     } catch (err) {
       setErrorMessage(err.message || "Failed to send reset code.");
     } finally {
@@ -776,709 +327,420 @@ export const LoginPage = ({
     }
   };
 
-  const handleForgotStep2Submit = async (e) => {
+  const handleVerifyForgotOtp = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    const code = (forgotOtpCode || forgotOtpDigits.join('')).trim();
-    if (code.length !== 6) {
-      setErrorMessage("Please enter the complete 6-digit verification code.");
+    const enteredCode = otpDigits.join('');
+    if (enteredCode.length !== 6) {
+      setErrorMessage("Please enter the complete 6-digit code.");
       return;
     }
 
     try {
       setIsLoading(true);
-      const res = await verifyPasswordResetOtp({
-        identifier: forgotIdentifier.trim(),
-        code
-      });
+      const res = await verifyOtpCode(email, enteredCode, 'forgot_password');
       setForgotActionToken(res.actionToken);
-      setForgotStep(3);
-      setSuccessMessage("Code verified! Please create your new strong password.");
+      setForgotStep(3); // Advance to New Password entry
+      setSuccessMessage("Code verified. Please set your new password.");
     } catch (err) {
-      setErrorMessage(err.message || "Invalid or expired verification code.");
+      setErrorMessage(err.message || "Invalid or expired code.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleForgotStep3Submit = async (e) => {
+  const handleResetPasswordSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
-    if (!forgotStrength.isStrong) {
-      setErrorMessage("Password must be at least 8 characters and include uppercase, lowercase, number, and special character.");
+    if (!isPasswordPolicySatisfied) {
+      setErrorMessage("Please satisfy all password criteria (1 uppercase, 1 lowercase, 1 number, 1 special character, max 8 chars).");
       return;
     }
 
-    if (forgotNewPassword !== forgotConfirmPassword) {
+    if (newPassword !== confirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
     }
 
     try {
       setIsLoading(true);
-      const res = await resetPassword({
+      const res = await resetForgottenPassword({
         actionToken: forgotActionToken,
-        newPassword: forgotNewPassword,
-        confirmPassword: forgotConfirmPassword
+        newPassword,
+        confirmPassword
       });
 
-      setSuccessMessage(res.message || "Password updated successfully! Entering Aaroh...");
+      setSuccessMessage(res.message || "Password reset successfully! Entering Aaroh...");
       setTimeout(() => {
         onLoginSuccess(res.user);
       }, 600);
     } catch (err) {
-      setErrorMessage(err.message || "Failed to update password.");
+      setErrorMessage(err.message || "Failed to reset password.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Quick Demo Profiles
-  const handleQuickDemoLogin = async (demoIdentifier) => {
+  // ==========================================
+  // FLOW 4: PASSWORDLESS EMAIL OTP LOGIN
+  // ==========================================
+  const handleSendPasswordlessOtp = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (!email || !email.includes('@')) {
+      setErrorMessage("Please enter your registered email address.");
+      return;
+    }
+
     try {
       setIsLoading(true);
-      setErrorMessage(null);
-      setSuccessMessage(null);
-      const res = await login({ identifier: demoIdentifier, password: 'Password@123' });
-      setSuccessMessage(`Welcome, ${res.user.name || res.user.full_name}! Entering Aaroh...`);
+      const res = await requestEmailOtp(email, 'login', '', captchaToken);
+      setIsOtpSent(true);
+      setOtpCountdown(res.cooldownSeconds || 60);
+      setSuccessMessage(`Instant login passcode dispatched to ${email}. Check your email.`);
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus();
+      }, 100);
+    } catch (err) {
+      setErrorMessage(err.message || "Failed to dispatch login code.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyPasswordlessOtp = async (e) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    const enteredCode = otpDigits.join('');
+    if (enteredCode.length !== 6) {
+      setErrorMessage("Please enter the 6-digit code.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await verifyOtpCode(email, enteredCode, 'login');
+      setSuccessMessage("Identity verified! Entering Aaroh...");
       setTimeout(() => {
         onLoginSuccess(res.user);
       }, 500);
     } catch (err) {
-      setErrorMessage(`Demo login failed: ${err.message}`);
+      setErrorMessage(err.message || "Invalid or expired passcode.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ==========================================
+  // FLOW 5: QUICK DEMO PROFILES (REAL SQLITE LOGIN)
+  // ==========================================
+  const handleQuickDemoLogin = async (demoEmail, demoRole) => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      setSuccessMessage(null);
+      const res = await loginWithCredentials(demoEmail, 'Password@123');
+      setSuccessMessage(`Welcome, ${res.user.name}! Entering Aaroh...`);
+      setTimeout(() => {
+        onLoginSuccess(res.user);
+      }, 500);
+    } catch (err) {
+      setErrorMessage(err.message || "Demo login failed.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: 'var(--bg-canvas)',
-      color: 'var(--text-primary)',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      fontFamily: 'var(--font-sans)',
-      overflowX: 'hidden'
-    }}>
-      {/* Background Cultural Micro-Particles */}
-      <CulturalParticles count={24} />
-
-      {/* Top Navbar */}
-      <header style={{
-        padding: '16px 28px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid var(--border-subtle)',
-        backgroundColor: 'var(--bg-surface)',
-        zIndex: 10
-      }}>
+    <div className="login-page-wrapper">
+      {/* Top Header Navigation */}
+      <header className="login-top-bar">
         <button 
-          onClick={onReturnToHome}
-          className="btn-ghost"
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          onClick={onReturnToHome} 
+          className="login-back-btn"
+          title="Return to Aaroh Cultural Journal"
         >
-          <ArrowLeft size={18} />
-          <span>{t('auth_btn_back_to_login', 'Return to Marketplace')}</span>
+          <ArrowLeft size={16} />
+          <span>Return to Cultural Journal • मुख्य पृष्ठ</span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
             onClick={onOpenLanguageModal}
-            className="btn-ghost"
-            title="Change Language"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            className="btn-secondary"
+            style={{ padding: '6px 14px', fontSize: '0.82rem', gap: '6px' }}
+            title="Switch language between 22 Indian scheduled languages"
           >
-            <Globe size={16} />
-            <span style={{ textTransform: 'uppercase', fontSize: '0.85rem' }}>{lang}</span>
+            <Globe size={14} color="var(--accent-indigo)" />
+            <span style={{ textTransform: 'capitalize' }}>{lang} • Language</span>
           </button>
 
-          <button 
+          <button
             onClick={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
-            className="btn-ghost"
-            title="Toggle Theme"
+            className="btn-icon"
+            style={{ width: '36px', height: '36px' }}
+            title="Toggle theme light/dark"
           >
-            {themeMode === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            {themeMode === 'light' ? <Moon size={15} /> : <Sun size={15} />}
           </button>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '32px 16px',
-        zIndex: 10
-      }}>
-        <div style={{
-          width: '100%',
-          maxWidth: '560px',
-          backgroundColor: 'var(--bg-surface)',
-          borderRadius: 'var(--radius-xl)',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: 'var(--shadow-lg)',
-          overflow: 'hidden'
-        }}>
-          {/* Header Card Brand Banner */}
-          <div style={{
-            padding: '28px 24px 20px',
-            textAlign: 'center',
-            backgroundColor: 'var(--bg-surface-subtle)',
-            borderBottom: '1px solid var(--border-subtle)'
-          }}>
-            <div style={{ fontSize: '32px', marginBottom: '4px' }}>🪷</div>
-            <h1 style={{
-              margin: '0 0 4px',
-              fontFamily: 'var(--font-serif)',
-              fontSize: '1.75rem',
-              color: 'var(--accent-indigo)',
-              letterSpacing: '0.04em'
-            }}>
-              Aaroh
+      {/* Main Split Grid */}
+      <div className="login-grid">
+        {/* Left Visual Sanctum Pane */}
+        <div className="login-sanctuary-pane">
+          <CulturalParticles reducedMotion={false} />
+
+          <div className="login-sanctuary-content">
+            <div className="sanctuary-emblem-badge animate-float">
+              <span>🪷</span>
+              <span>Aaroh • Living Guild Sanctum</span>
+            </div>
+
+            <h1 className="sanctuary-title">
+              कला प्रवेश द्वार
+              <span style={{ display: 'block', fontSize: '0.62em', fontWeight: 400, marginTop: '6px', color: '#D5C5B2' }}>
+                Where Indian Heritage Breathes
+              </span>
             </h1>
-            <p style={{
-              margin: 0,
-              fontSize: '0.86rem',
-              color: 'var(--text-muted)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em'
-            }}>
-              Living Cultural Craft Marketplace & Fair-Trade Sanctuary
+
+            <p className="sanctuary-subtitle">
+              Authentic Indian folk arts, handloom textiles, and living traditions. Connect directly with hereditary master craftspeople with transparent fair wages and certified geographic indications.
             </p>
 
-            {/* Persona Switcher */}
-            <div style={{
-              display: 'flex',
-              backgroundColor: 'var(--bg-surface)',
-              borderRadius: 'var(--radius-full)',
-              padding: '4px',
-              marginTop: '18px',
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <button
-                type="button"
-                onClick={() => setUserRole('customer')}
-                style={{
-                  flex: 1,
-                  padding: '7px 12px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  backgroundColor: userRole === 'customer' ? 'var(--accent-indigo)' : 'transparent',
-                  color: userRole === 'customer' ? '#FFFFFF' : 'var(--text-muted)',
-                  fontWeight: userRole === 'customer' ? 600 : 500,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <User size={14} />
-                <span>{t('auth_role_collector', 'Craft Patron / Collector')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserRole('artisan')}
-                style={{
-                  flex: 1,
-                  padding: '7px 12px',
-                  borderRadius: 'var(--radius-full)',
-                  border: 'none',
-                  backgroundColor: userRole === 'artisan' ? 'var(--accent-terracotta)' : 'transparent',
-                  color: userRole === 'artisan' ? '#FFFFFF' : 'var(--text-muted)',
-                  fontWeight: userRole === 'artisan' ? 600 : 500,
-                  fontSize: '0.84rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                <Award size={14} />
-                <span>{t('auth_role_artisan', 'Master Artisan')}</span>
-              </button>
+            {/* Three Living Provenance Pillars */}
+            <div className="sanctuary-pillars">
+              <div className="sanctuary-pillar-item">
+                <span className="pillar-icon">✉️</span>
+                <div className="pillar-text">
+                  <strong>Real Email OTP Verification</strong>
+                  <span>Single-use 6-digit security codes dispatched directly to your personal email inbox.</span>
+                </div>
+              </div>
+
+              <div className="sanctuary-pillar-item">
+                <span className="pillar-icon">🔒</span>
+                <div className="pillar-text">
+                  <strong>Bcrypt Encrypted Passwords</strong>
+                  <span>Passwords are salted and cryptographically hashed before persistent database storage.</span>
+                </div>
+              </div>
+
+              <div className="sanctuary-pillar-item">
+                <span className="pillar-icon">⚖️</span>
+                <div className="pillar-text">
+                  <strong>Direct Fair Trade Payouts</strong>
+                  <span>85% goes directly to artisan guilds without exploitative middleman deductions.</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Living Artisan Master Quote */}
+            <div className="sanctuary-artisan-quote">
+              “In Mithila, the ink is soot and tree gum. When patrons connect through Aaroh, our craft remains a living prayer, not a museum memory.”
+              <div style={{ marginTop: '8px', fontWeight: 600, color: '#E6AA4E', fontStyle: 'normal', fontSize: '0.82rem' }}>
+                — Dulari Devi • Padma Shri Master Painter, Ranti Village, Bihar
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Navigation Tabs */}
-          <div style={{
-            display: 'flex',
-            borderBottom: '1px solid var(--border-subtle)',
-            backgroundColor: 'var(--bg-surface)'
-          }}>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('signin')}
-              style={{
-                flex: 1,
-                padding: '13px 10px',
-                border: 'none',
-                borderBottom: authTab === 'signin' ? '2px solid var(--accent-indigo)' : '2px solid transparent',
-                backgroundColor: 'transparent',
-                color: authTab === 'signin' ? 'var(--accent-indigo)' : 'var(--text-muted)',
-                fontWeight: authTab === 'signin' ? 700 : 500,
-                fontSize: '0.88rem',
-                cursor: 'pointer'
-              }}
-            >
-              {t('auth_btn_login', 'Login')}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('signup')}
-              style={{
-                flex: 1,
-                padding: '13px 10px',
-                border: 'none',
-                borderBottom: authTab === 'signup' ? '2px solid var(--accent-terracotta)' : '2px solid transparent',
-                backgroundColor: 'transparent',
-                color: authTab === 'signup' ? 'var(--accent-terracotta)' : 'var(--text-muted)',
-                fontWeight: authTab === 'signup' ? 700 : 500,
-                fontSize: '0.88rem',
-                cursor: 'pointer'
-              }}
-            >
-              {t('auth_btn_create_account', 'Sign Up')}
-            </button>
-            {(pendingUserId || authTab === 'verify') && (
-              <button
-                type="button"
-                onClick={() => handleSwitchTab('verify')}
-                style={{
-                  flex: 1,
-                  padding: '13px 10px',
-                  border: 'none',
-                  borderBottom: authTab === 'verify' ? '2px solid #2D6629' : '2px solid transparent',
-                  backgroundColor: 'transparent',
-                  color: authTab === 'verify' ? '#2D6629' : 'var(--text-muted)',
-                  fontWeight: authTab === 'verify' ? 700 : 500,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer'
-                }}
+        {/* Right Authentication Form Console */}
+        <div className="login-form-pane">
+          <div className="login-form-card">
+            {/* Header Heading */}
+            <div className="login-header-group">
+              <h2 className="login-heading">Welcome to Aaroh</h2>
+              <p className="login-caption">
+                Sign in to manage your collection, commission custom heritage artworks, or administer your artisan studio.
+              </p>
+            </div>
+
+            {/* Persona Selector (Collector vs Artisan) */}
+            <div className="persona-selector-grid">
+              <div 
+                className={`persona-card ${userRole === 'customer' ? 'active' : ''}`}
+                onClick={() => setUserRole('customer')}
+                role="button"
+                tabIndex={0}
               >
-                {t('auth_verify_title', 'Verification')}
-              </button>
-            )}
-          </div>
-
-          {/* Card Body */}
-          <div style={{ padding: '24px' }}>
-            {/* Error Notification */}
-            {errorMessage && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#FFF0F2',
-                color: '#B82D43',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.88rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px',
-                marginBottom: '18px',
-                border: '1px solid #F5C6CB'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertCircle size={18} style={{ flexShrink: 0 }} />
-                  <span>{errorMessage}</span>
+                <div className="persona-card-header">
+                  <span className="persona-icon">🪷</span>
+                  <div className="persona-check">✓</div>
                 </div>
+                <div className="persona-title">Craft Patron</div>
+                <div className="persona-desc">Collect, commission custom art, and track guild shipments.</div>
+              </div>
+
+              <div 
+                className={`persona-card ${userRole === 'artisan' ? 'active' : ''}`}
+                onClick={() => setUserRole('artisan')}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="persona-card-header">
+                  <span className="persona-icon">🏺</span>
+                  <div className="persona-check">✓</div>
+                </div>
+                <div className="persona-title">Master Artisan</div>
+                <div className="persona-desc">Voice cataloging, fair wage payouts, and patron orders.</div>
+              </div>
+            </div>
+
+            {/* Auth Method Navigation Tabs */}
+            <div className="auth-methods-nav">
+              <button 
+                className={`auth-method-pill ${authMethod === 'email' ? 'active' : ''}`}
+                onClick={() => handleSwitchAuthMethod('email')}
+              >
+                <Mail size={14} />
+                <span>Email Authentication</span>
+              </button>
+
+              <button 
+                className={`auth-method-pill ${authMethod === 'demo' ? 'active' : ''}`}
+                onClick={() => handleSwitchAuthMethod('demo')}
+              >
+                <Sparkles size={14} />
+                <span>Demo Accounts</span>
+              </button>
+            </div>
+
+            {/* Live Feedback Banners */}
+            {errorMessage && (
+              <div className="login-alert-banner error" role="alert">
+                <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                <span>{errorMessage}</span>
               </div>
             )}
 
-            {/* Success Notification */}
             {successMessage && (
-              <div style={{
-                padding: '12px 16px',
-                backgroundColor: '#EEF6E8',
-                color: '#2D6629',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '0.88rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '18px',
-                border: '1px solid #C3E6CB'
-              }}>
+              <div className="login-alert-banner success" role="status">
                 <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
                 <span>{successMessage}</span>
               </div>
             )}
 
-            {/* ========================================================= */}
-            {/* TAB 1: LOGIN (EMAIL OR PHONE VIA OTP OR PASSWORD)        */}
-            {/* ========================================================= */}
-            {authTab === 'signin' && (
+            {/* ======================================================== */}
+            {/* METHOD 1: EMAIL AUTHENTICATION (SIGNIN / REGISTER / FORGOT) */}
+            {/* ======================================================== */}
+            {authMethod === 'email' && (
               <div>
-                {/* Social Login Options (Google & Microsoft Entra ID) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={handleGoogleOAuth}
-                    disabled={oauthLoading !== null}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      padding: '11px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'var(--bg-surface)',
-                      border: '1.5px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 600,
-                      fontSize: '0.86rem',
-                      cursor: oauthLoading ? 'wait' : 'pointer',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease',
-                      width: '100%'
-                    }}
-                    aria-label="Continue with Google"
-                  >
-                    {oauthLoading === 'google' ? <RefreshCw size={16} className="animate-spin" /> : <GoogleIcon />}
-                    <span>Google</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleMicrosoftOAuth}
-                    disabled={oauthLoading !== null}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      padding: '11px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'var(--bg-surface)',
-                      border: '1.5px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 600,
-                      fontSize: '0.86rem',
-                      cursor: oauthLoading ? 'wait' : 'pointer',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease',
-                      width: '100%'
-                    }}
-                    aria-label="Continue with Microsoft"
-                  >
-                    {oauthLoading === 'microsoft' ? <RefreshCw size={16} className="animate-spin" /> : <MicrosoftIcon />}
-                    <span>Microsoft</span>
-                  </button>
-                </div>
-
-                {/* Heritage Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', margin: '14px 0 18px', color: 'var(--text-muted)' }}>
-                  <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle)' }} />
-                  <span style={{ padding: '0 10px', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    or continue with
-                  </span>
-                  <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle)' }} />
-                </div>
-
-                {/* Mode Selector: Sign in with OTP vs Sign in with Password */}
+                {/* Mode Selector Tabs (Sign In / Register / Passwordless) */}
                 <div style={{
                   display: 'flex',
-                  backgroundColor: 'var(--bg-surface-subtle)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '3px',
-                  marginBottom: '18px',
-                  border: '1px solid var(--border-subtle)'
+                  gap: '8px',
+                  borderBottom: '1px solid var(--border-subtle)',
+                  marginBottom: '20px',
+                  paddingBottom: '10px'
                 }}>
                   <button
                     type="button"
-                    onClick={() => { setLoginMode('otp'); setErrorMessage(null); }}
+                    onClick={() => handleSwitchEmailMode('signin')}
                     style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
+                      padding: '6px 14px',
+                      fontSize: '0.86rem',
+                      fontWeight: emailMode === 'signin' ? 700 : 500,
+                      color: emailMode === 'signin' ? 'var(--accent-indigo)' : 'var(--text-muted)',
+                      borderBottom: emailMode === 'signin' ? '2px solid var(--accent-indigo)' : 'none',
+                      background: 'none',
                       border: 'none',
-                      backgroundColor: loginMode === 'otp' ? 'var(--accent-indigo)' : 'transparent',
-                      color: loginMode === 'otp' ? '#FFFFFF' : 'var(--text-muted)',
-                      fontWeight: loginMode === 'otp' ? 700 : 500,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s ease'
+                      cursor: 'pointer'
                     }}
                   >
-                    <Smartphone size={14} />
-                    <span>Sign in with OTP</span>
+                    Password Login
                   </button>
+
                   <button
                     type="button"
-                    onClick={() => { setLoginMode('password'); setErrorMessage(null); }}
+                    onClick={() => handleSwitchEmailMode('register')}
                     style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-sm)',
+                      padding: '6px 14px',
+                      fontSize: '0.86rem',
+                      fontWeight: emailMode === 'register' ? 700 : 500,
+                      color: emailMode === 'register' ? 'var(--accent-indigo)' : 'var(--text-muted)',
+                      borderBottom: emailMode === 'register' ? '2px solid var(--accent-indigo)' : 'none',
+                      background: 'none',
                       border: 'none',
-                      backgroundColor: loginMode === 'password' ? 'var(--accent-indigo)' : 'transparent',
-                      color: loginMode === 'password' ? '#FFFFFF' : 'var(--text-muted)',
-                      fontWeight: loginMode === 'password' ? 700 : 500,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s ease'
+                      cursor: 'pointer'
                     }}
                   >
-                    <Lock size={14} />
-                    <span>Sign in with Password</span>
+                    Email OTP Signup
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchEmailMode('passwordless')}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.86rem',
+                      fontWeight: emailMode === 'passwordless' ? 700 : 500,
+                      color: emailMode === 'passwordless' ? 'var(--accent-indigo)' : 'var(--text-muted)',
+                      borderBottom: emailMode === 'passwordless' ? '2px solid var(--accent-indigo)' : 'none',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Passwordless OTP Login
                   </button>
                 </div>
 
-                {/* MODE 1: OTP LOGIN (STEP 1: ENTER CONTACT, STEP 2: VERIFY 6-DIGIT OTP) */}
-                {loginMode === 'otp' && (
-                  <>
-                    {loginOtpStep === 1 && (
-                      <form onSubmit={handleSendLoginOtp}>
-                        <div className="form-group">
-                          <label className="form-label">
-                            {t('auth_email', 'Enter your registered email or mobile number')}
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={loginIdentifier}
-                            onChange={(e) => setLoginIdentifier(e.target.value)}
-                            placeholder="e.g. aditi@aaroh.in or +91 98450 12345"
-                            className="form-input"
-                            autoComplete="username"
-                          />
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                            We will send a fresh 6-digit verification code to your email or phone number.
-                          </span>
-                        </div>
-
-                        {/* Cloudflare Turnstile CAPTCHA */}
-                        <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                          <TurnstileWidget
-                            theme={themeMode}
-                            action="login_otp"
-                            onVerify={(token) => setCaptchaToken(token)}
-                            onExpire={() => setCaptchaToken('')}
-                            onError={() => setCaptchaToken('')}
-                          />
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={isSendingLoginOtp || !loginIdentifier.trim()}
-                          className="btn-primary"
-                          style={{ width: '100%', padding: '13px', marginTop: '6px' }}
-                        >
-                          {isSendingLoginOtp ? (
-                            <>
-                              <RefreshCw size={16} className="animate-spin" />
-                              <span>Sending Verification Code...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>Send Verification Code</span>
-                              <ArrowRight size={16} />
-                            </>
-                          )}
-                        </button>
-                      </form>
-                    )}
-
-                    {loginOtpStep === 2 && (
-                      <form onSubmit={handleVerifyLoginOtp}>
-                        <div style={{
-                          padding: '12px 14px',
-                          backgroundColor: 'var(--bg-surface-subtle)',
-                          borderRadius: 'var(--radius-md)',
-                          marginBottom: '16px',
-                          fontSize: '0.86rem',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}>
-                          <div>
-                            <span style={{ color: 'var(--text-muted)' }}>Code sent to: </span>
-                            <strong>{loginOtpTarget || loginIdentifier}</strong>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => { setLoginOtpStep(1); setErrorMessage(null); }}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--accent-terracotta)',
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Change
-                          </button>
-                        </div>
-
-                        <div style={{ margin: '14px 0 16px' }}>
-                          <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                            Enter 6-Digit Verification Code
-                          </label>
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(6, 1fr)',
-                            gap: '10px',
-                            maxWidth: '400px',
-                            margin: '0 auto',
-                            width: '100%'
-                          }}>
-                            {[0, 1, 2, 3, 4, 5].map((idx) => {
-                              const digit = loginOtpDigits[idx] || '';
-                              return (
-                                <input
-                                  key={idx}
-                                  ref={(el) => (loginOtpInputRefs.current[idx] = el)}
-                                  type="text"
-                                  inputMode="numeric"
-                                  autoComplete="one-time-code"
-                                  maxLength={6}
-                                  value={digit}
-                                  onChange={(e) => handleBoxChange(loginOtpDigits, setLoginOtpDigits, loginOtpInputRefs, idx, e.target.value)}
-                                  onKeyDown={(e) => handleBoxKeyDown(loginOtpDigits, setLoginOtpDigits, loginOtpInputRefs, idx, e)}
-                                  onPaste={(e) => handleBoxPaste(setLoginOtpDigits, loginOtpInputRefs, e)}
-                                  onFocus={(e) => e.target.select()}
-                                  aria-label={`Login code digit ${idx + 1}`}
-                                  style={{
-                                    width: '100%',
-                                    height: '56px',
-                                    textAlign: 'center',
-                                    fontSize: '1.65rem',
-                                    fontWeight: 800,
-                                    fontFamily: 'system-ui, -apple-system, sans-serif',
-                                    color: '#0F172A',
-                                    backgroundColor: '#FFFFFF',
-                                    border: digit ? '2.5px solid #1A3459' : '2px solid #94A3B8',
-                                    borderRadius: '10px',
-                                    outline: 'none',
-                                    boxShadow: digit ? '0 0 0 3px rgba(26, 52, 89, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                                    transition: 'all 0.15s ease',
-                                    boxSizing: 'border-box'
-                                  }}
-                                />
-                              );
-                            })}
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                            <span>Valid for 5 minutes</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{loginOtpDigits.join('').length}/6 digits</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-                          <button
-                            type="submit"
-                            disabled={isVerifyingLoginOtp || loginOtpDigits.join('').length !== 6}
-                            className="btn-primary"
-                            style={{ flex: 1, padding: '12px' }}
-                          >
-                            {isVerifyingLoginOtp ? (
-                              <>
-                                <RefreshCw size={14} className="animate-spin" />
-                                <span>Verifying & Signing In...</span>
-                              </>
-                            ) : (
-                              <span>Verify & Sign In</span>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={loginOtpCountdown > 0 || isSendingLoginOtp}
-                            onClick={handleSendLoginOtp}
-                            className="btn-secondary"
-                            style={{ padding: '12px 14px', fontSize: '0.84rem' }}
-                          >
-                            {loginOtpCountdown > 0 ? `Resend (${loginOtpCountdown}s)` : 'Resend Code'}
-                          </button>
-                        </div>
-                      </form>
-                    )}
-                  </>
-                )}
-
-                {/* MODE 2: PASSWORD LOGIN (FOR ADMIN & USERS WITH PASSWORDS) */}
-                {loginMode === 'password' && (
-                  <form onSubmit={handleLoginSubmit}>
+                {/* 1A. STANDARD PASSWORD SIGN IN */}
+                {emailMode === 'signin' && (
+                  <form onSubmit={handlePasswordLogin}>
                     <div className="form-group">
-                      <label className="form-label">
-                        {t('auth_email', 'Email Address, Mobile Number, or User ID')}
-                      </label>
-                      <input
+                      <label className="form-label">Email Address or User ID • ईमेल या यूज़र आईडी</label>
+                      <input 
                         type="text"
-                        required
-                        value={loginIdentifier}
-                        onChange={(e) => setLoginIdentifier(e.target.value)}
-                        placeholder="e.g. aditi@aaroh.in, +91 98450 12345, or ARH-ADMIN"
+                        value={loginIdentifier || email}
+                        onChange={(e) => {
+                          setLoginIdentifier(e.target.value);
+                          setEmail(e.target.value);
+                        }}
+                        placeholder="you@domain.com or ARH-000101"
                         className="form-input"
-                        autoComplete="username"
+                        required
+                        autoFocus
                       />
                     </div>
 
                     <div className="form-group">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <label className="form-label" style={{ margin: 0 }}>{t('auth_password', 'Password')}</label>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <label className="form-label">Password • पासवर्ड</label>
                         <button
                           type="button"
-                          onClick={() => handleSwitchTab('forgot')}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--accent-terracotta)',
-                            fontSize: '0.82rem',
-                            cursor: 'pointer',
-                            padding: 0
-                          }}
+                          onClick={() => handleSwitchEmailMode('forgot')}
+                          style={{ fontSize: '0.78rem', color: 'var(--accent-indigo)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                          {t('auth_forgot_password_link', 'Forgot password?')}
+                          Forgot Password?
                         </button>
                       </div>
                       <div style={{ position: 'relative' }}>
-                        <input
-                          type={showLoginPassword ? 'text' : 'password'}
-                          required
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          placeholder="Enter your password"
+                        <input 
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
                           className="form-input"
-                          autoComplete="current-password"
-                          style={{ paddingRight: '42px' }}
+                          style={{ paddingRight: '40px' }}
+                          required
                         />
                         <button
                           type="button"
-                          onClick={() => setShowLoginPassword(!showLoginPassword)}
-                          style={{
-                            position: 'absolute',
-                            right: '12px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--text-muted)',
-                            cursor: 'pointer',
-                            padding: '4px'
-                          }}
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                          {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
                       </div>
                     </div>
@@ -1494,1065 +756,625 @@ export const LoginPage = ({
                       />
                     </div>
 
-                    <button
-                      type="submit"
+                    <button 
+                      type="submit" 
+                      className="btn-primary btn-sheen" 
                       disabled={isLoading}
-                      className="btn-primary"
-                      style={{ width: '100%', padding: '13px', marginTop: '6px' }}
+                      style={{ width: '100%', padding: '13px 20px', marginTop: '6px' }}
                     >
-                      <Lock size={16} />
-                      <span>{isLoading ? 'Authenticating...' : t('auth_btn_login', 'Sign In')}</span>
+                      {isLoading ? "Authenticating..." : "Sign In • प्रवेश करें"}
                     </button>
-                  </form>
-                )}
 
-                <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                  {t('auth_dont_have_account', "Don't have an account yet?")}{' '}
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTab('signup')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--accent-indigo)',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 0
-                    }}
-                  >
-                    {t('auth_btn_create_account', 'Create Account')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ========================================================= */}
-            {/* TAB 2: FUNCTIONAL SIGNUP FLOW                             */}
-            {/* ========================================================= */}
-            {authTab === 'signup' && (
-              <form onSubmit={handleSignupSubmit}>
-                {/* Social Signup Options (Google & Microsoft Entra ID) */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={handleGoogleOAuth}
-                    disabled={oauthLoading !== null}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      padding: '11px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'var(--bg-surface)',
-                      border: '1.5px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 600,
-                      fontSize: '0.86rem',
-                      cursor: oauthLoading ? 'wait' : 'pointer',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease',
-                      width: '100%'
-                    }}
-                    aria-label="Sign up with Google"
-                  >
-                    {oauthLoading === 'google' ? <RefreshCw size={16} className="animate-spin" /> : <GoogleIcon />}
-                    <span>Google</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleMicrosoftOAuth}
-                    disabled={oauthLoading !== null}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '10px',
-                      padding: '11px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      backgroundColor: 'var(--bg-surface)',
-                      border: '1.5px solid var(--border-subtle)',
-                      color: 'var(--text-primary)',
-                      fontWeight: 600,
-                      fontSize: '0.86rem',
-                      cursor: oauthLoading ? 'wait' : 'pointer',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                      transition: 'all 0.2s ease',
-                      width: '100%'
-                    }}
-                    aria-label="Sign up with Microsoft"
-                  >
-                    {oauthLoading === 'microsoft' ? <RefreshCw size={16} className="animate-spin" /> : <MicrosoftIcon />}
-                    <span>Microsoft</span>
-                  </button>
-                </div>
-
-                {/* Heritage Divider */}
-                <div style={{ display: 'flex', alignItems: 'center', margin: '14px 0 18px', color: 'var(--text-muted)' }}>
-                  <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle)' }} />
-                  <span style={{ padding: '0 10px', fontSize: '0.74rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    or register with email / mobile
-                  </span>
-                  <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle)' }} />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">{t('auth_fullname', 'Full Name')}</label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Ramesh Sharma"
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    {t('auth_email', 'Email Address')} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>(Optional if mobile phone entered)</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. aditi@aaroh.in"
-                    className="form-input"
-                    autoComplete="email"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    {t('auth_phone', 'Mobile Phone Number')} <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: 'var(--text-muted)' }}>(Optional if email entered)</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. +91 91757 02555"
-                    className="form-input"
-                    autoComplete="tel"
-                  />
-                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                    Enter email, mobile phone, or both. At least one contact method is required to receive verification OTPs.
-                  </span>
-                </div>
-
-                {/* Password field with live strength requirement checklist */}
-                <div className="form-group">
-                  <label className="form-label">{t('auth_password', 'Password')}</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showSignupPassword ? 'text' : 'password'}
-                      required
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="At least 8 characters with symbol & number"
-                      className="form-input"
-                      style={{ paddingRight: '42px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSignupPassword(!showSignupPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-
-                  {/* Real-time Password Policy Checklist */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                    gap: '6px',
-                    marginTop: '8px',
-                    padding: '8px',
-                    backgroundColor: 'var(--bg-surface-subtle)',
-                    borderRadius: 'var(--radius-sm)'
-                  }}>
-                    <div style={{ fontSize: '0.74rem', color: signupStrength.hasMinLength ? '#2D6629' : 'var(--text-muted)' }}>
-                      {signupStrength.hasMinLength ? '✓' : '○'} 8+ Characters
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: signupStrength.hasUpper ? '#2D6629' : 'var(--text-muted)' }}>
-                      {signupStrength.hasUpper ? '✓' : '○'} Uppercase (A-Z)
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: signupStrength.hasLower ? '#2D6629' : 'var(--text-muted)' }}>
-                      {signupStrength.hasLower ? '✓' : '○'} Lowercase (a-z)
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: signupStrength.hasNumber ? '#2D6629' : 'var(--text-muted)' }}>
-                      {signupStrength.hasNumber ? '✓' : '○'} Number (0-9)
-                    </div>
-                    <div style={{ fontSize: '0.74rem', color: signupStrength.hasSpecial ? '#2D6629' : 'var(--text-muted)' }}>
-                      {signupStrength.hasSpecial ? '✓' : '○'} Special (!@#$)
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">{t('auth_confirm_password', 'Confirm Password')}</label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type={showSignupConfirmPassword ? 'text' : 'password'}
-                      required
-                      value={signupConfirmPassword}
-                      onChange={(e) => setSignupConfirmPassword(e.target.value)}
-                      placeholder="Re-enter your password"
-                      className="form-input"
-                      style={{ paddingRight: '42px' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSignupConfirmPassword(!showSignupConfirmPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {showSignupConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Cloudflare Turnstile CAPTCHA */}
-                <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                  <TurnstileWidget
-                    theme={themeMode}
-                    action="signup"
-                    onVerify={(token) => setCaptchaToken(token)}
-                    onExpire={() => setCaptchaToken('')}
-                    onError={() => setCaptchaToken('')}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading || !signupStrength.isStrong}
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '13px', marginTop: '6px' }}
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw size={16} className="animate-spin" />
-                      <span>Creating Account & Sending Codes...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{t('auth_btn_create_account', 'Create Account & Verify')}</span>
-                      <ArrowRight size={16} />
-                    </>
-                  )}
-                </button>
-
-                <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                  {t('auth_already_have_account', 'Already registered with Aaroh?')}{' '}
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTab('signin')}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--accent-indigo)',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      padding: 0
-                    }}
-                  >
-                    {t('auth_btn_login', 'Login')}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* ========================================================= */}
-            {/* TAB 3: INDEPENDENT EMAIL & PHONE VERIFICATION SCREEN     */}
-            {/* ========================================================= */}
-            {authTab === 'verify' && (
-              <div>
-                <div style={{ textAlign: 'center', marginBottom: '22px' }}>
-                  <h2 style={{
-                    margin: '0 0 6px',
-                    fontFamily: 'var(--font-serif)',
-                    fontSize: '1.35rem',
-                    color: 'var(--accent-indigo)'
-                  }}>
-                    Complete Account Verification
-                  </h2>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                    Verify your email and phone number independently to unlock full access to the Aaroh Fair-Trade Sanctuary.
-                  </p>
-                </div>
-
-                {/* Overall Completion Celebration */}
-                {((isEmailVerified && isPhoneVerified) ||
-                  (verificationContactType === 'email' && isEmailVerified) ||
-                  (verificationContactType === 'phone' && isPhoneVerified) ||
-                  (Boolean(verificationEmail) && !verificationPhone && isEmailVerified) ||
-                  (Boolean(verificationPhone) && !verificationEmail && isPhoneVerified)) && (
-                  <div style={{
-                    padding: '20px',
-                    backgroundColor: '#EEF6E8',
-                    border: '1.5px solid #68793D',
-                    borderRadius: 'var(--radius-lg)',
-                    textAlign: 'center',
-                    marginBottom: '24px'
-                  }}>
-                    <div style={{ fontSize: '32px', marginBottom: '6px' }}>🪷</div>
-                    <h3 style={{ margin: '0 0 4px', color: '#2D6629', fontSize: '1.15rem', fontWeight: 700 }}>
-                      Account Successfully Verified!
-                    </h3>
-                    <p style={{ margin: '0 0 16px', fontSize: '0.86rem', color: '#3A5A40' }}>
-                      Your account has been securely verified. Welcome to Aaroh!
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => onLoginSuccess(verifiedUserProfile || { email: verificationEmail, phone_number: verificationPhone, role: userRole })}
-                      className="btn-primary"
-                      style={{ padding: '12px 28px', backgroundColor: '#2D6629', borderColor: '#2D6629' }}
-                    >
-                      <span>Enter Aaroh Marketplace</span>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                )}
-
-                {/* SINGLE CONTACT VERIFICATION (EITHER EMAIL OR PHONE NUMBER) */}
-                {!(Boolean(verificationEmail) && Boolean(verificationPhone)) ? (
-                  <div style={{
-                    border: '1.5px solid var(--accent-indigo)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '20px',
-                    marginBottom: '20px',
-                    backgroundColor: 'var(--bg-surface)'
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '1rem' }}>
-                        {verificationContactType === 'email' || (!verificationPhone && Boolean(verificationEmail)) ? (
-                          <>
-                            <Mail size={18} color="var(--accent-indigo)" />
-                            <span>Email Verification</span>
-                          </>
-                        ) : (
-                          <>
-                            <Smartphone size={18} color="var(--accent-terracotta)" />
-                            <span>Mobile Phone SMS Verification</span>
-                          </>
-                        )}
+                    <div style={{ marginTop: '14px', padding: '10px 12px', background: 'var(--bg-surface-subtle)', borderRadius: '8px', border: '1px dashed var(--border-subtle)', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
+                        ⚡ Quick Demo Sign-in (Pre-seeded Accounts):
+                      </span>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoginIdentifier('dulari@aaroh.in');
+                            setEmail('dulari@aaroh.in');
+                            setPassword('Password@123');
+                          }}
+                          className="btn-secondary"
+                          style={{ padding: '4px 10px', fontSize: '0.76rem' }}
+                        >
+                          Dulari Devi (Artisan)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoginIdentifier('patron@aaroh.in');
+                            setEmail('patron@aaroh.in');
+                            setPassword('Password@123');
+                          }}
+                          className="btn-secondary"
+                          style={{ padding: '4px 10px', fontSize: '0.76rem' }}
+                        >
+                          Aditi Narang (Patron)
+                        </button>
                       </div>
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: 'var(--radius-full)',
-                        backgroundColor: '#FFF3CD',
-                        color: '#856404',
-                        fontSize: '0.78rem',
-                        fontWeight: 700
-                      }}>
-                        Pending Verification
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.84rem' }}>
+                      <span>
+                        Need an account?{' '}
+                        <button 
+                          type="button" 
+                          onClick={() => handleSwitchEmailMode('register')}
+                          style={{ color: 'var(--accent-indigo)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                          Create Account with Email OTP
+                        </button>
                       </span>
                     </div>
-
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.5 }}>
-                      {verificationContactType === 'email' || (!verificationPhone && Boolean(verificationEmail)) ? (
-                        <span>A real 6-digit verification code has been dispatched via Gmail SMTP to: <strong>{verificationEmail || verificationTarget}</strong> (Valid for 5 mins)</span>
-                      ) : (
-                        <span>A real 6-digit SMS verification code has been dispatched via Twilio to: <strong>{verificationPhone || verificationTarget}</strong> (Valid for 5 mins)</span>
-                      )}
-                    </div>
-
-                    <form onSubmit={handleVerifySignupOtp}>
-                      <div style={{ margin: '14px 0 16px' }}>
-                        <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                          Enter 6-Digit Verification Code
-                        </label>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(6, 1fr)',
-                          gap: '10px',
-                          maxWidth: '400px',
-                          margin: '0 auto',
-                          width: '100%'
-                        }}>
-                          {[0, 1, 2, 3, 4, 5].map((idx) => {
-                            const digit = signupOtpDigits[idx] || '';
-                            return (
-                              <input
-                                key={idx}
-                                ref={(el) => (signupOtpInputRefs.current[idx] = el)}
-                                type="text"
-                                inputMode="numeric"
-                                autoComplete="one-time-code"
-                                maxLength={6}
-                                value={digit}
-                                onChange={(e) => handleBoxChange(signupOtpDigits, setSignupOtpDigits, signupOtpInputRefs, idx, e.target.value)}
-                                onKeyDown={(e) => handleBoxKeyDown(signupOtpDigits, setSignupOtpDigits, signupOtpInputRefs, idx, e)}
-                                onPaste={(e) => handleBoxPaste(setSignupOtpDigits, signupOtpInputRefs, e)}
-                                onFocus={(e) => e.target.select()}
-                                aria-label={`Signup code digit ${idx + 1}`}
-                                style={{
-                                  width: '100%',
-                                  height: '56px',
-                                  textAlign: 'center',
-                                  fontSize: '1.65rem',
-                                  fontWeight: 800,
-                                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                                  color: '#0F172A',
-                                  backgroundColor: '#FFFFFF',
-                                  border: digit ? '2.5px solid #1A3459' : '2px solid #94A3B8',
-                                  borderRadius: '10px',
-                                  outline: 'none',
-                                  boxShadow: digit ? '0 0 0 3px rgba(26, 52, 89, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                                  transition: 'all 0.15s ease',
-                                  boxSizing: 'border-box'
-                                }}
-                              />
-                            );
-                          })}
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                          <span>Type each digit or paste full 6-digit code</span>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{signupOtpDigits.join('').length}/6 digits</span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
-                        <button
-                          type="submit"
-                          disabled={isVerifyingSignupOtp || signupOtpDigits.join('').length !== 6}
-                          className="btn-primary"
-                          style={{ flex: 1, padding: '12px' }}
-                        >
-                          {isVerifyingSignupOtp ? (
-                            <>
-                              <RefreshCw size={14} className="animate-spin" />
-                              <span>Verifying Code...</span>
-                            </>
-                          ) : (
-                            <span>Verify & Complete Registration</span>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={signupOtpCountdown > 0 || isResendingSignupOtp}
-                          onClick={handleResendSignupOtp}
-                          className="btn-secondary"
-                          style={{ padding: '12px 16px', fontSize: '0.84rem' }}
-                        >
-                          {signupOtpCountdown > 0 ? `Resend (${signupOtpCountdown}s)` : 'Resend Code'}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                ) : (
-                  /* LEGACY DUAL USERS (BOTH EMAIL AND PHONE ON FILE) */
-                  <>
-                    {/* SECTION A: EMAIL VERIFICATION */}
-                    <div style={{
-                      border: isEmailVerified ? '1.5px solid #A3D9A5' : '1px solid var(--border-medium)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '18px 20px',
-                      marginBottom: '20px',
-                      backgroundColor: isEmailVerified ? '#F7FCF5' : 'var(--bg-surface)'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.98rem' }}>
-                          <Mail size={18} color="var(--accent-indigo)" />
-                          <span>1. Email Verification</span>
-                        </div>
-                        {isEmailVerified ? (
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: '#D4EDDA',
-                            color: '#155724',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}>
-                            Verified ✓
-                          </span>
-                        ) : (
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: '#FFF3CD',
-                            color: '#856404',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}>
-                            Pending Verification
-                          </span>
-                        )}
-                      </div>
-
-                      <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        <span>A real 6-digit verification code has been dispatched via Gmail SMTP to: <strong>{verificationEmail}</strong> (Valid for 5 mins)</span>
-                      </div>
-
-                      {!isEmailVerified && (
-                        <form onSubmit={handleVerifyEmail}>
-                          <div style={{ margin: '14px 0 16px' }}>
-                            <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                              Enter 6-Digit Email Verification Code
-                            </label>
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: 'repeat(6, 1fr)',
-                              gap: '10px',
-                              maxWidth: '400px',
-                              margin: '0 auto',
-                              width: '100%'
-                            }}>
-                              {[0, 1, 2, 3, 4, 5].map((idx) => {
-                                const digit = emailOtpDigits[idx] || '';
-                                return (
-                                  <input
-                                    key={idx}
-                                    ref={(el) => (emailInputRefs.current[idx] = el)}
-                                    type="text"
-                                    inputMode="numeric"
-                                    autoComplete="one-time-code"
-                                    maxLength={6}
-                                    value={digit}
-                                    onChange={(e) => handleBoxChange(emailOtpDigits, setEmailOtpDigits, emailInputRefs, idx, e.target.value)}
-                                    onKeyDown={(e) => handleBoxKeyDown(emailOtpDigits, setEmailOtpDigits, emailInputRefs, idx, e)}
-                                    onPaste={(e) => handleBoxPaste(setEmailOtpDigits, emailInputRefs, e)}
-                                    onFocus={(e) => e.target.select()}
-                                    aria-label={`Email code digit ${idx + 1}`}
-                                    style={{
-                                      width: '100%',
-                                      height: '56px',
-                                      textAlign: 'center',
-                                      fontSize: '1.65rem',
-                                      fontWeight: 800,
-                                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                                      color: '#0F172A',
-                                      backgroundColor: '#FFFFFF',
-                                      border: digit ? '2.5px solid #1A3459' : '2px solid #94A3B8',
-                                      borderRadius: '10px',
-                                      outline: 'none',
-                                      boxShadow: digit ? '0 0 0 3px rgba(26, 52, 89, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                                      transition: 'all 0.15s ease',
-                                      boxSizing: 'border-box'
-                                    }}
-                                  />
-                                );
-                              })}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                              <span>Type each digit or paste full 6-digit code</span>
-                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{emailOtpDigits.join('').length}/6 digits</span>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                            <button
-                              type="submit"
-                              disabled={isVerifyingEmail || emailOtpDigits.join('').length !== 6}
-                              className="btn-primary"
-                              style={{ flex: 1, padding: '10px' }}
-                            >
-                              {isVerifyingEmail ? (
-                                <>
-                                  <RefreshCw size={14} className="animate-spin" />
-                                  <span>Verifying...</span>
-                                </>
-                              ) : (
-                                <span>{t('auth_btn_verify', 'Verify Email Code')}</span>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={emailCountdown > 0 || isResendingEmail}
-                              onClick={handleResendEmail}
-                              className="btn-secondary"
-                              style={{ padding: '10px 14px', fontSize: '0.84rem' }}
-                            >
-                              {emailCountdown > 0 ? `Resend (${emailCountdown}s)` : t('auth_btn_resend', 'Resend Code')}
-                            </button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-
-                    {/* SECTION B: PHONE SMS VERIFICATION (Twilio Verify) */}
-                    <div style={{
-                      border: isPhoneVerified ? '1.5px solid #A3D9A5' : '1px solid var(--border-medium)',
-                      borderRadius: 'var(--radius-lg)',
-                      padding: '18px 20px',
-                      marginBottom: '20px',
-                      backgroundColor: isPhoneVerified ? '#F7FCF5' : 'var(--bg-surface)'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.98rem' }}>
-                          <Smartphone size={18} color="var(--accent-terracotta)" />
-                          <span>{t('auth_enter_phone_code', '2. Phone SMS Verification (Twilio Verify)')}</span>
-                        </div>
-                        {isPhoneVerified ? (
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: '#D4EDDA',
-                            color: '#155724',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}>
-                            {t('auth_phone_verified_badge', 'Verified ✓')}
-                          </span>
-                        ) : (
-                          <span style={{
-                            padding: '4px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            backgroundColor: '#FFF3CD',
-                            color: '#856404',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}>
-                            Pending Verification
-                          </span>
-                        )}
-                      </div>
-
-                      <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        <span>A real 6-digit SMS verification code has been dispatched via Twilio to: <strong>{verificationPhone}</strong> (Valid for 5 mins)</span>
-                      </div>
-
-                      {!isPhoneVerified && (
-                        <form onSubmit={handleVerifyPhone}>
-                          <div style={{ margin: '14px 0 16px' }}>
-                            <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                              {t('auth_enter_phone_code', 'Enter 6-Digit SMS Verification Code')}
-                            </label>
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: 'repeat(6, 1fr)',
-                              gap: '10px',
-                              maxWidth: '400px',
-                              margin: '0 auto',
-                              width: '100%'
-                            }}>
-                              {[0, 1, 2, 3, 4, 5].map((idx) => {
-                                const digit = phoneOtpDigits[idx] || '';
-                                return (
-                                  <input
-                                    key={idx}
-                                    ref={(el) => (phoneInputRefs.current[idx] = el)}
-                                    type="text"
-                                    inputMode="numeric"
-                                    autoComplete="one-time-code"
-                                    maxLength={6}
-                                    value={digit}
-                                    onChange={(e) => handleBoxChange(phoneOtpDigits, setPhoneOtpDigits, phoneInputRefs, idx, e.target.value)}
-                                    onKeyDown={(e) => handleBoxKeyDown(phoneOtpDigits, setPhoneOtpDigits, phoneInputRefs, idx, e)}
-                                    onPaste={(e) => handleBoxPaste(setPhoneOtpDigits, phoneInputRefs, e)}
-                                    onFocus={(e) => e.target.select()}
-                                    aria-label={`SMS code digit ${idx + 1}`}
-                                    style={{
-                                      width: '100%',
-                                      height: '56px',
-                                      textAlign: 'center',
-                                      fontSize: '1.65rem',
-                                      fontWeight: 800,
-                                      fontFamily: 'system-ui, -apple-system, sans-serif',
-                                      color: '#0F172A',
-                                      backgroundColor: '#FFFFFF',
-                                      border: digit ? '2.5px solid #1A3459' : '2px solid #94A3B8',
-                                      borderRadius: '10px',
-                                      outline: 'none',
-                                      boxShadow: digit ? '0 0 0 3px rgba(26, 52, 89, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                                      transition: 'all 0.15s ease',
-                                      boxSizing: 'border-box'
-                                    }}
-                                  />
-                                );
-                              })}
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                              <span>Type each digit or paste full 6-digit code</span>
-                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{phoneOtpDigits.join('').length}/6 digits</span>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                            <button
-                              type="submit"
-                              disabled={isVerifyingPhone || phoneOtpDigits.join('').length !== 6}
-                              className="btn-primary"
-                              style={{ flex: 1, padding: '10px' }}
-                            >
-                              {isVerifyingPhone ? (
-                                <>
-                                  <RefreshCw size={14} className="animate-spin" />
-                                  <span>Checking Twilio...</span>
-                                </>
-                              ) : (
-                                <span>{t('auth_btn_verify', 'Verify Phone Code')}</span>
-                              )}
-                            </button>
-
-                            <button
-                              type="button"
-                              disabled={phoneCountdown > 0 || isResendingPhone}
-                              onClick={handleResendPhone}
-                              className="btn-secondary"
-                              style={{ padding: '10px 14px', fontSize: '0.84rem' }}
-                            >
-                              {phoneCountdown > 0 ? `Resend (${phoneCountdown}s)` : t('auth_btn_resend', 'Resend Code')}
-                            </button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTab('signin')}
-                    className="btn-ghost"
-                    style={{ fontSize: '0.85rem' }}
-                  >
-                    {t('auth_btn_back_to_login', '← Return to Login Screen')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ========================================================= */}
-            {/* TAB 4: PASSWORD RESET FLOW                                */}
-            {/* ========================================================= */}
-            {authTab === 'forgot' && (
-              <div>
-                <h3 style={{
-                  margin: '0 0 6px',
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: '1.25rem',
-                  color: 'var(--accent-terracotta)'
-                }}>
-                  {t('auth_forgot_title', 'Password Recovery')}
-                </h3>
-
-                {forgotStep === 1 && (
-                  <form onSubmit={handleForgotStep1Submit}>
-                    <p style={{ margin: '0 0 16px', fontSize: '0.86rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      Enter your registered Email Address or Phone Number. We will dispatch a single-use 6-digit recovery code.
-                    </p>
-
-                    <div className="form-group">
-                      <label className="form-label">{t('auth_email', 'Email Address or Phone Number')}</label>
-                      <input
-                        type="text"
-                        required
-                        value={forgotIdentifier}
-                        onChange={(e) => setForgotIdentifier(e.target.value)}
-                        placeholder="e.g. aditi@aaroh.in or +91 98450 22002"
-                        className="form-input"
-                      />
-                    </div>
-
-                    {/* Cloudflare Turnstile CAPTCHA */}
-                    <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                      <TurnstileWidget
-                        theme={themeMode}
-                        action="forgot_password"
-                        onVerify={(token) => setCaptchaToken(token)}
-                        onExpire={() => setCaptchaToken('')}
-                        onError={() => setCaptchaToken('')}
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="btn-primary"
-                      style={{ width: '100%', padding: '12px' }}
-                    >
-                      {isLoading ? 'Dispatching Recovery Code...' : t('auth_btn_send_reset', 'Send Recovery Code')}
-                    </button>
-
-                    <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleSwitchTab('signin')}
-                        className="btn-ghost"
-                        style={{ fontSize: '0.85rem' }}
-                      >
-                        {t('auth_btn_back_to_login', '← Back to Sign In')}
-                      </button>
-                    </div>
                   </form>
                 )}
 
-                {forgotStep === 2 && (
-                  <form onSubmit={handleForgotStep2Submit}>
-                    <p style={{ margin: '0 0 16px', fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-                      Enter the 6-digit verification code sent to <strong>{forgotIdentifier}</strong>.
-                    </p>
+                {/* 1B. MULTI-STEP EMAIL OTP REGISTRATION */}
+                {emailMode === 'register' && (
+                  <div>
+                    {regStep === 1 ? (
+                      <div>
+                        {!isOtpSent ? (
+                          <form onSubmit={handleSendRegOtp}>
+                            <div className="form-group">
+                              <label className="form-label">Full Name • पूरा नाम</label>
+                              <input 
+                                type="text"
+                                value={displayName}
+                                onChange={(e) => setDisplayName(e.target.value)}
+                                placeholder="e.g. Aditi Narang or Raghav Sharma"
+                                className="form-input"
+                                required
+                                autoFocus
+                              />
+                            </div>
 
-                    <div style={{ margin: '16px 0 20px' }}>
-                      <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '10px' }}>
-                        Enter 6-Digit Password Reset Code
-                      </label>
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(6, 1fr)',
-                        gap: '10px',
-                        maxWidth: '400px',
-                        margin: '0 auto',
-                        width: '100%'
-                      }}>
-                        {[0, 1, 2, 3, 4, 5].map((idx) => {
-                          const digit = forgotOtpDigits[idx] || '';
-                          return (
-                            <input
-                              key={idx}
-                              ref={(el) => (forgotInputRefs.current[idx] = el)}
+                            <div className="form-group">
+                              <label className="form-label">Email Address • ईमेल</label>
+                              <input 
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="you@domain.com"
+                                className="form-input"
+                                required
+                              />
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                                A real single-use 6-digit verification code will be sent to this email inbox.
+                              </span>
+                            </div>
+
+                            <div className="form-group">
+                              <label className="form-label">Mobile Number • मोबाइल नंबर</label>
+                              <input 
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                placeholder="+91 98765 43210"
+                                className="form-input"
+                                required
+                              />
+                            </div>
+
+                            {/* Cloudflare Turnstile CAPTCHA */}
+                            <div style={{ margin: '14px 0', minHeight: '65px' }}>
+                              <TurnstileWidget
+                                theme={themeMode}
+                                action="signup"
+                                onVerify={(token) => setCaptchaToken(token)}
+                                onExpire={() => setCaptchaToken('')}
+                                onError={() => setCaptchaToken('')}
+                              />
+                            </div>
+
+                            <button 
+                              type="submit" 
+                              className="btn-primary btn-sheen" 
+                              disabled={isLoading}
+                              style={{ width: '100%', padding: '13px 20px', marginTop: '8px' }}
+                            >
+                              {isLoading ? "Dispatching Email..." : "Send Verification Code • कोड भेजें"}
+                            </button>
+                          </form>
+                        ) : (
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                Code dispatched to <strong>{email}</strong>
+                              </span>
+                              <button 
+                                onClick={() => {
+                                  setIsOtpSent(false);
+                                  setOtpDigits(['', '', '', '', '', '']);
+                                }}
+                                style={{ fontSize: '0.8rem', color: 'var(--accent-indigo)', fontWeight: 600, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+                              >
+                                Edit Details
+                              </button>
+                            </div>
+
+                            <div style={{
+                              backgroundColor: 'var(--bg-surface-subtle)',
+                              padding: '10px 14px',
+                              borderRadius: 'var(--radius-sm)',
+                              fontSize: '0.82rem',
+                              color: 'var(--text-secondary)',
+                              marginBottom: '14px'
+                            }}>
+                              Applicant: <strong>{displayName}</strong> • Phone: <strong>{phone}</strong>
+                            </div>
+
+                            {/* 6 Square PIN Input Boxes */}
+                            <div className="otp-boxes-grid" onPaste={handlePasteOtp}>
+                              {otpDigits.map((digit, index) => (
+                                <input 
+                                  key={index}
+                                  ref={(el) => (otpInputRefs.current[index] = el)}
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={1}
+                                  value={digit}
+                                  onChange={(e) => handleOtpBoxChange(index, e.target.value)}
+                                  onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                                  className={`otp-box-input ${digit ? 'filled' : ''}`}
+                                />
+                              ))}
+                            </div>
+
+                            <button 
+                              type="button"
+                              onClick={handleVerifyRegOtp}
+                              className="btn-primary btn-sheen" 
+                              disabled={isLoading}
+                              style={{ width: '100%', padding: '13px 20px', marginTop: '14px' }}
+                            >
+                              {isLoading ? "Verifying..." : "Verify Code & Generate Unique User ID"}
+                            </button>
+
+                            <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.82rem' }}>
+                              {otpCountdown > 0 ? (
+                                <span style={{ color: 'var(--text-muted)' }}>
+                                  Resend code in <strong>{otpCountdown}s</strong>
+                                </span>
+                              ) : (
+                                <button 
+                                  type="button"
+                                  onClick={handleSendRegOtp} 
+                                  style={{ color: 'var(--accent-indigo)', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none' }}
+                                >
+                                  Resend Email Verification Code
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      /* STEP 2: DISPLAY ASSIGNED UNIQUE USER ID & PASSWORD SETUP */
+                      <form onSubmit={handleCompleteRegistration}>
+                        <div style={{
+                          backgroundColor: 'var(--bg-surface-subtle)',
+                          border: '1px solid var(--accent-olive)',
+                          padding: '12px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: '0.84rem',
+                          color: 'var(--accent-olive)',
+                          marginBottom: '16px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700 }}>
+                            <CheckCircle2 size={16} />
+                            <span>Unique User ID Assigned: {assignedUserId || 'ARH-XXXXXX'}</span>
+                          </div>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            Verified Profile: <strong>{displayName}</strong> ({email} • {phone})
+                          </span>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Create Password (Maximum 8 characters)</label>
+                          <div style={{ position: 'relative' }}>
+                            <input 
+                              type={showPassword ? 'text' : 'password'}
+                              maxLength={8}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              placeholder="e.g. Pass@12"
+                              className="form-input"
+                              style={{ paddingRight: '40px' }}
+                              required
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+
+                          {/* Live Password Criteria Badges */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                            gap: '4px',
+                            marginTop: '8px'
+                          }}>
+                            <div style={{ fontSize: '0.74rem', color: hasUpper ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasUpper ? '✓' : '○'}</span> Uppercase letter
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasLower ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasLower ? '✓' : '○'}</span> Lowercase letter
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasNumber ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasNumber ? '✓' : '○'}</span> Number (0-9)
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasSpecial ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasSpecial ? '✓' : '○'}</span> Special character
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: isValidLength ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{isValidLength ? '✓' : '○'}</span> Max 8 characters
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label className="form-label">Confirm Password</label>
+                          <input 
+                            type="password"
+                            maxLength={8}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter password"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          className="btn-primary btn-sheen" 
+                          disabled={isLoading || !isPasswordPolicySatisfied}
+                          style={{ width: '100%', padding: '13px 20px', marginTop: '6px' }}
+                        >
+                          {isLoading ? "Creating Encrypted Account..." : "Complete Registration • खाता बनाएँ"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                {/* 1C. PASSWORDLESS EMAIL OTP LOGIN */}
+                {emailMode === 'passwordless' && (
+                  <div>
+                    {!isOtpSent ? (
+                      <form onSubmit={handleSendPasswordlessOtp}>
+                        <div className="form-group">
+                          <label className="form-label">Registered Email Address</label>
+                          <input 
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@domain.com"
+                            className="form-input"
+                            required
+                            autoFocus
+                          />
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                            We will email you a secure 6-digit one-time sign-in code. No password needed.
+                          </span>
+                        </div>
+
+                        {/* Cloudflare Turnstile CAPTCHA */}
+                        <div style={{ margin: '14px 0', minHeight: '65px' }}>
+                          <TurnstileWidget
+                            theme={themeMode}
+                            action="login_otp"
+                            onVerify={(token) => setCaptchaToken(token)}
+                            onExpire={() => setCaptchaToken('')}
+                            onError={() => setCaptchaToken('')}
+                          />
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          className="btn-primary btn-sheen" 
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '13px 20px', marginTop: '8px' }}
+                        >
+                          {isLoading ? "Sending..." : "Send One-Time Login Code"}
+                        </button>
+                      </form>
+                    ) : (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            Login code sent to <strong>{email}</strong>
+                          </span>
+                          <button 
+                            onClick={() => {
+                              setIsOtpSent(false);
+                              setOtpDigits(['', '', '', '', '', '']);
+                            }}
+                            style={{ fontSize: '0.8rem', color: 'var(--accent-indigo)', fontWeight: 600, textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}
+                          >
+                            Change
+                          </button>
+                        </div>
+
+                        <div className="otp-boxes-grid" onPaste={handlePasteOtp}>
+                          {otpDigits.map((digit, index) => (
+                            <input 
+                              key={index}
+                              ref={(el) => (otpInputRefs.current[index] = el)}
                               type="text"
                               inputMode="numeric"
-                              autoComplete="one-time-code"
-                              maxLength={6}
+                              maxLength={1}
                               value={digit}
-                              onChange={(e) => handleBoxChange(forgotOtpDigits, setForgotOtpDigits, forgotInputRefs, idx, e.target.value)}
-                              onKeyDown={(e) => handleBoxKeyDown(forgotOtpDigits, setForgotOtpDigits, forgotInputRefs, idx, e)}
-                              onPaste={(e) => handleBoxPaste(setForgotOtpDigits, forgotInputRefs, e)}
-                              onFocus={(e) => e.target.select()}
-                              aria-label={`Reset code digit ${idx + 1}`}
-                              style={{
-                                width: '100%',
-                                height: '56px',
-                                textAlign: 'center',
-                                fontSize: '1.65rem',
-                                fontWeight: 800,
-                                fontFamily: 'system-ui, -apple-system, sans-serif',
-                                color: '#0F172A',
-                                backgroundColor: '#FFFFFF',
-                                border: digit ? '2.5px solid #1A3459' : '2px solid #94A3B8',
-                                borderRadius: '10px',
-                                outline: 'none',
-                                boxShadow: digit ? '0 0 0 3px rgba(26, 52, 89, 0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
-                                transition: 'all 0.15s ease',
-                                boxSizing: 'border-box'
-                              }}
+                              onChange={(e) => handleOtpBoxChange(index, e.target.value)}
+                              onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                              className={`otp-box-input ${digit ? 'filled' : ''}`}
                             />
-                          );
-                        })}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                        <span>Type each digit or paste full 6-digit code</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{forgotOtpDigits.join('').length}/6 digits</span>
-                      </div>
-                    </div>
+                          ))}
+                        </div>
 
-                    <button
-                      type="submit"
-                      disabled={isLoading || forgotOtpDigits.join('').length !== 6}
-                      className="btn-primary"
-                      style={{ width: '100%', padding: '12px' }}
-                    >
-                      {isLoading ? 'Verifying Code...' : t('auth_btn_verify', 'Verify Code & Proceed')}
-                    </button>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', fontSize: '0.84rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => setForgotStep(1)}
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                      >
-                        Change details
-                      </button>
-                      {forgotCountdown > 0 ? (
-                        <span style={{ color: 'var(--text-muted)' }}>Resend in {forgotCountdown}s</span>
-                      ) : (
-                        <button
+                        <button 
                           type="button"
-                          onClick={handleForgotStep1Submit}
-                          style={{ background: 'none', border: 'none', color: 'var(--accent-terracotta)', fontWeight: 600, cursor: 'pointer' }}
+                          onClick={handleVerifyPasswordlessOtp}
+                          className="btn-primary btn-sheen" 
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '13px 20px', marginTop: '14px' }}
                         >
-                          {t('auth_btn_resend', 'Resend Code')}
+                          {isLoading ? "Verifying..." : "Verify & Sign In Instantly"}
                         </button>
-                      )}
-                    </div>
-                  </form>
+
+                        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.82rem' }}>
+                          {otpCountdown > 0 ? (
+                            <span style={{ color: 'var(--text-muted)' }}>
+                              Resend code in <strong>{otpCountdown}s</strong>
+                            </span>
+                          ) : (
+                            <button 
+                              type="button"
+                              onClick={handleSendPasswordlessOtp} 
+                              style={{ color: 'var(--accent-indigo)', fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none' }}
+                            >
+                              Resend Login Code
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {forgotStep === 3 && (
-                  <form onSubmit={handleForgotStep3Submit}>
-                    <p style={{ margin: '0 0 16px', fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-                      Identity verified! Create your new strong password.
-                    </p>
+                {/* 1D. FORGOT PASSWORD MULTI-STEP FLOW */}
+                {emailMode === 'forgot' && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchEmailMode('signin')}
+                        style={{ background: 'none', border: 'none', color: 'var(--accent-indigo)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.84rem' }}
+                      >
+                        <ArrowLeft size={14} /> Back to Sign In
+                      </button>
+                    </div>
 
-                    <div className="form-group">
-                      <label className="form-label">{t('auth_new_password', 'New Password (8+ characters)')}</label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type={showForgotNewPassword ? 'text' : 'password'}
-                          required
-                          value={forgotNewPassword}
-                          onChange={(e) => setForgotNewPassword(e.target.value)}
-                          placeholder="Enter strong password"
-                          className="form-input"
-                          style={{ paddingRight: '42px' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
-                          style={{
-                            position: 'absolute',
-                            right: '12px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'none',
-                            border: 'none',
-                            color: 'var(--text-muted)',
-                            cursor: 'pointer'
-                          }}
+                    {forgotStep === 1 && (
+                      <form onSubmit={handleSendForgotOtp}>
+                        <div className="form-group">
+                          <label className="form-label">Registered Account Email or User ID</label>
+                          <input 
+                            type="text"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@domain.com or ARH-000101"
+                            className="form-input"
+                            required
+                            autoFocus
+                          />
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginTop: '6px' }}>
+                            We will send a real 6-digit verification code to your verified email inbox.
+                          </span>
+                        </div>
+
+                        {/* Cloudflare Turnstile CAPTCHA */}
+                        <div style={{ margin: '14px 0', minHeight: '65px' }}>
+                          <TurnstileWidget
+                            theme={themeMode}
+                            action="forgot_password"
+                            onVerify={(token) => setCaptchaToken(token)}
+                            onExpire={() => setCaptchaToken('')}
+                            onError={() => setCaptchaToken('')}
+                          />
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          className="btn-primary" 
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '12px 20px', marginTop: '8px' }}
                         >
-                          {showForgotNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          {isLoading ? "Sending..." : "Send Reset Code • रीसेट कोड भेजें"}
+                        </button>
+                      </form>
+                    )}
+
+                    {forgotStep === 2 && (
+                      <div>
+                        <div style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                          Enter the 6-digit reset code sent to <strong>{email}</strong>:
+                        </div>
+
+                        <div className="otp-boxes-grid" onPaste={handlePasteOtp}>
+                          {otpDigits.map((digit, index) => (
+                            <input 
+                              key={index}
+                              ref={(el) => (otpInputRefs.current[index] = el)}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={digit}
+                              onChange={(e) => handleOtpBoxChange(index, e.target.value)}
+                              onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                              className={`otp-box-input ${digit ? 'filled' : ''}`}
+                            />
+                          ))}
+                        </div>
+
+                        <button 
+                          type="button"
+                          onClick={handleVerifyForgotOtp}
+                          className="btn-primary" 
+                          disabled={isLoading}
+                          style={{ width: '100%', padding: '12px 20px', marginTop: '14px' }}
+                        >
+                          {isLoading ? "Verifying..." : "Verify Code & Proceed to New Password"}
                         </button>
                       </div>
+                    )}
 
-                      <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                        gap: '6px',
-                        marginTop: '8px',
-                        padding: '8px',
-                        backgroundColor: 'var(--bg-surface-subtle)',
-                        borderRadius: 'var(--radius-sm)'
-                      }}>
-                        <div style={{ fontSize: '0.74rem', color: forgotStrength.hasMinLength ? '#2D6629' : 'var(--text-muted)' }}>
-                          {forgotStrength.hasMinLength ? '✓' : '○'} 8+ Chars
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: forgotStrength.hasUpper ? '#2D6629' : 'var(--text-muted)' }}>
-                          {forgotStrength.hasUpper ? '✓' : '○'} Uppercase
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: forgotStrength.hasLower ? '#2D6629' : 'var(--text-muted)' }}>
-                          {forgotStrength.hasLower ? '✓' : '○'} Lowercase
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: forgotStrength.hasNumber ? '#2D6629' : 'var(--text-muted)' }}>
-                          {forgotStrength.hasNumber ? '✓' : '○'} Number
-                        </div>
-                        <div style={{ fontSize: '0.74rem', color: forgotStrength.hasSpecial ? '#2D6629' : 'var(--text-muted)' }}>
-                          {forgotStrength.hasSpecial ? '✓' : '○'} Special symbol
-                        </div>
-                      </div>
-                    </div>
+                    {forgotStep === 3 && (
+                      <form onSubmit={handleResetPasswordSubmit}>
+                        <div className="form-group">
+                          <label className="form-label">Create New Password (Max 8 characters)</label>
+                          <div style={{ position: 'relative' }}>
+                            <input 
+                              type={showNewPassword ? 'text' : 'password'}
+                              maxLength={8}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="e.g. NewPass1@"
+                              className="form-input"
+                              style={{ paddingRight: '40px' }}
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}
+                            >
+                              {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
 
-                    <div className="form-group">
-                      <label className="form-label">{t('auth_confirm_password', 'Confirm New Password')}</label>
-                      <input
-                        type="password"
-                        required
-                        value={forgotConfirmPassword}
-                        onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                        placeholder="Re-enter new password"
-                        className="form-input"
-                      />
-                    </div>
+                          {/* Live Password Criteria Badges */}
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                            gap: '4px',
+                            marginTop: '8px'
+                          }}>
+                            <div style={{ fontSize: '0.74rem', color: hasUpper ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasUpper ? '✓' : '○'}</span> Uppercase letter
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasLower ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasLower ? '✓' : '○'}</span> Lowercase letter
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasNumber ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasNumber ? '✓' : '○'}</span> Number (0-9)
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: hasSpecial ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{hasSpecial ? '✓' : '○'}</span> Special character
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: isValidLength ? 'var(--accent-olive)' : 'var(--text-muted)' }}>
+                              <span>{isValidLength ? '✓' : '○'}</span> Max 8 characters
+                            </div>
+                          </div>
+                        </div>
 
-                    <button
-                      type="submit"
-                      disabled={isLoading || !forgotStrength.isStrong}
-                      className="btn-primary"
-                      style={{ width: '100%', padding: '12px' }}
-                    >
-                      {isLoading ? 'Updating Password...' : t('auth_btn_reset_password', 'Reset & Log In')}
-                    </button>
-                  </form>
+                        <div className="form-group">
+                          <label className="form-label">Confirm New Password</label>
+                          <input 
+                            type="password"
+                            maxLength={8}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter new password"
+                            className="form-input"
+                            required
+                          />
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          className="btn-primary" 
+                          disabled={isLoading || !isPasswordPolicySatisfied}
+                          style={{ width: '100%', padding: '12px 20px', marginTop: '6px' }}
+                        >
+                          {isLoading ? "Encrypting & Updating..." : "Update Password & Sign In"}
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 )}
               </div>
             )}
 
-            {/* ========================================================= */}
-            {/* TAB 5: DEMO ACCOUNTS (PRE-SEEDED SQLITE USERS)             */}
-            {/* ========================================================= */}
-            {authTab === 'demo' && (
+            {/* ======================================================== */}
+            {/* METHOD 2: QUICK DEMO PROFILES (PERSISTED IN SQLITE DB) */}
+            {/* ======================================================== */}
+            {authMethod === 'demo' && (
               <div>
-                <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-                  Quickly test the marketplace using genuine pre-seeded verified accounts:
+                <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                  These pre-seeded accounts authenticate directly with our SQLite database using Bcrypt password hashes:
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-surface-subtle)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.96rem' }}>Dulari Devi</div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--accent-terracotta)', fontWeight: 600 }}>
-                        Master Artisan • User ID: ARH-000101
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        dulari@aaroh.in • Verified Email & Phone
-                      </div>
+                <div className="demo-profiles-stack">
+                  {/* Master Artisan Card */}
+                  <div 
+                    className="demo-profile-card"
+                    onClick={() => handleQuickDemoLogin('dulari@aaroh.in', 'artisan')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="demo-avatar-box">
+                      <img src="/assets/images/hero-artisan.jpg" alt="Dulari Devi" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickDemoLogin('dulari@aaroh.in')}
-                      disabled={isLoading}
-                      className="btn-secondary"
-                      style={{ padding: '8px 14px', fontSize: '0.82rem' }}
-                    >
-                      Login Artisan
-                    </button>
+                    <div className="demo-info">
+                      <div className="demo-name-badge">
+                        <strong>Dulari Devi</strong>
+                        <span className="badge badge-in-stock" style={{ fontSize: '0.7rem' }}>Master Artisan</span>
+                      </div>
+                      <div className="demo-subtitle">Mithila Painting Custodian • Ranti, Bihar</div>
+                      <div className="demo-creds">dulari@aaroh.in • Password: Password@123</div>
+                    </div>
+                    <div className="demo-action-arrow">→</div>
                   </div>
 
-                  <div style={{
-                    padding: '16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-subtle)',
-                    backgroundColor: 'var(--bg-surface-subtle)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.96rem' }}>Aditi Narang</div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--accent-indigo)', fontWeight: 600 }}>
-                        Craft Patron / Collector • User ID: ARH-000202
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        patron@aaroh.in • Verified Email & Phone
-                      </div>
+                  {/* Craft Patron Card */}
+                  <div 
+                    className="demo-profile-card"
+                    onClick={() => handleQuickDemoLogin('patron@aaroh.in', 'customer')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="demo-avatar-box" style={{ backgroundColor: 'var(--accent-indigo)', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                      AN
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickDemoLogin('patron@aaroh.in')}
-                      disabled={isLoading}
-                      className="btn-secondary"
-                      style={{ padding: '8px 14px', fontSize: '0.82rem' }}
-                    >
-                      Login Patron
-                    </button>
+                    <div className="demo-info">
+                      <div className="demo-name-badge">
+                        <strong>Aditi Narang</strong>
+                        <span className="badge" style={{ fontSize: '0.7rem', backgroundColor: 'var(--bg-surface-subtle)', color: 'var(--text-secondary)' }}>Craft Patron</span>
+                      </div>
+                      <div className="demo-subtitle">Indian Folk Heritage Collector • Bengaluru</div>
+                      <div className="demo-creds">patron@aaroh.in • Password: Password@123</div>
+                    </div>
+                    <div className="demo-action-arrow">→</div>
                   </div>
                 </div>
               </div>
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 };

@@ -124,7 +124,7 @@ export const AarohVisionSection = ({ lang, onScrollToExplore }) => {
                 zIndex: 3
               }}
             >
-              “The ink is made from soot and acacia gum. Every line is a prayer for the soil.”
+              “{t('vision_quote').replace(/[“”]/g, '')}”
             </div>
           </div>
 
@@ -186,30 +186,30 @@ export const AarohVisionSection = ({ lang, onScrollToExplore }) => {
               <div className="living-pillar-card">
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-indigo)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🎙️</span>
-                  <span>Oral Provenance</span>
+                  <span>{t('vision_pillar_1_title')}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  Artisans catalog pieces using their own spoken words in their mother tongue.
+                  {t('vision_pillar_1_desc')}
                 </div>
               </div>
 
               <div className="living-pillar-card">
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-rose)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>⚖️</span>
-                  <span>100% Fair Wage</span>
+                  <span>{t('vision_pillar_2_title')}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  Direct guild accounts with zero intermediary margin cuts.
+                  {t('vision_pillar_2_desc')}
                 </div>
               </div>
 
               <div className="living-pillar-card">
                 <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-olive)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span>🛡️</span>
-                  <span>Verified GI Tags</span>
+                  <span>{t('vision_pillar_3_title')}</span>
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-                  Legal Geographic Indication origin certification on each artifact.
+                  {t('vision_pillar_3_desc')}
                 </div>
               </div>
             </div>
@@ -231,7 +231,7 @@ export const AarohVisionSection = ({ lang, onScrollToExplore }) => {
         <div className="bridge-floral-line">
           <div className="bridge-lotus-badge shimmer-badge">
             <span className="animate-float">🪷</span>
-            <span>From Hereditary Hands to Your Home • कला यात्रा</span>
+            <span>{t('vision_bridge')}</span>
             <span className="animate-float" style={{ animationDelay: '1.5s' }}>🪷</span>
           </div>
         </div>

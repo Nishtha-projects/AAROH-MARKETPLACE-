@@ -1,3 +1,6 @@
+import { createProduct, callArtisanAdvisorAPI } from '../services/apiMarketplace';
+import { calculateArtisanPrice } from '../services/pricingEngine';
+import { enhanceCraftImage } from '../services/imageEnhancer';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Home, 
@@ -74,6 +77,17 @@ export const ArtisanDashboard = ({
   const [selectedVoiceLang, setSelectedVoiceLang] = useState('hi-IN');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [voiceVolume, setVoiceVolume] = useState(0);
+  // Aaroh Saathi AI Advisor state
+  const [saathiMessages, setSaathiMessages] = useState([
+    {
+      sender: 'saathi',
+      text: 'Namaste Master Artisan! I am Aaroh Saathi, your dedicated AI craft advisor. I can help you with fair pricing calculations, GI tag certification steps, safe packaging for fragile shipments, or optimizing listing descriptions. How can I assist you today?'
+    }
+  ]);
+  const [saathiInput, setSaathiInput] = useState('');
+  const [isSaathiThinking, setIsSaathiThinking] = useState(false);
+  const [isEnhancingPhoto, setIsEnhancingPhoto] = useState(false);
+
   const [voiceError, setVoiceError] = useState(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState(null);
@@ -239,6 +253,56 @@ export const ArtisanDashboard = ({
   };
 
   // AI Craft Field Extraction Heuristic
+  const handleAskSaathi = async (customPrompt) => {
+    const question = customPrompt || saathiInput;
+    if (!question || !question.trim()) return;
+
+    setSaathiMessages(prev => [...prev, { sender: 'user', text: question }]);
+    setSaathiInput('');
+    setIsSaathiThinking(true);
+
+    try {
+      const res = await callArtisanAdvisorAPI(question, draftFields.category?.value || 'Traditional Indian Craft');
+      setSaathiMessages(prev => [
+        ...prev, 
+        { 
+          sender: 'saathi', 
+          text: res.reply || 'Guidance formulated based on National Crafts Council benchmarks.',
+          tip: res.artisanTip
+        }
+      ]);
+    } catch {
+      setSaathiMessages(prev => [
+        ...prev, 
+        { 
+          sender: 'saathi', 
+          text: 'To ensure a fair price, always account for your raw materials plus at least ₹180-250 per hour of hand labor, plus 15% for packaging. Aaroh ensures 100% of your listed price reaches you directly.' 
+        }
+      ]);
+    } finally {
+      setIsSaathiThinking(false);
+    }
+  };
+
+  const handleEnhanceFirstPhoto = async () => {
+    if (!uploadedPhotos || !uploadedPhotos[0]) return;
+    setIsEnhancingPhoto(true);
+    try {
+      const enhanced = await enhanceCraftImage(uploadedPhotos[0], {
+        addGiSeal: true,
+        craftName: draftFields.category?.value || "GI Certified Craft"
+      });
+      if (enhanced) {
+        setUploadedPhotos(prev => [enhanced, ...prev.slice(1)]);
+        alert("Photo successfully enhanced with calibrated natural contrast and an authentic GI Verification seal!");
+      }
+    } catch (e) {
+      console.warn('Enhancement error', e);
+    } finally {
+      setIsEnhancingPhoto(false);
+    }
+  };
+
   const handleExtractFields = (textToExtract = voiceTranscript) => {
     if (!textToExtract || !textToExtract.trim()) {
       alert("Please speak or enter a voice transcript first.");
@@ -412,6 +476,7 @@ export const ArtisanDashboard = ({
               {[
                 { id: 'overview', label: 'Studio Overview', icon: Home },
                 { id: 'new-listing', label: 'Voice & AI Draft', icon: Mic, badge: 'Studio' },
+                { id: 'saathi', label: 'Aaroh Saathi (AI Advisor)', icon: Sparkles, badge: 'AI' },
                 { id: 'listings', label: 'Active Catalog', icon: Layers, count: products.length },
                 { id: 'orders', label: 'Received Orders', icon: Package, count: orders.length },
                 { id: 'enquiries', label: 'Guild Enquiries', icon: MessageSquare, count: enquiries.length },
@@ -1254,6 +1319,132 @@ export const ArtisanDashboard = ({
           )}
 
           {/* VIEW 3: ACTIVE CATALOG */}
+                    {/* =======================================================
+              AAROH SAATHI: AI ARTISAN ADVISOR CHATBOT VIEW
+              ======================================================= */}
+          {activeView === 'saathi' && (
+            <div>
+              <div style={{ marginBottom: '20px' }}>
+                <span className="craft-seal-badge" style={{ marginBottom: '6px' }}>
+                  <Sparkles size={13} />
+                  <span>Aaroh Saathi • Master Artisan AI Advisor</span>
+                </span>
+                <h3 style={{ fontSize: '1.4rem', color: '#1A3459', margin: '4px 0 0', fontFamily: 'var(--font-serif)' }}>
+                  Aaroh Saathi — Intelligent Craft & Livelihood Guide
+                </h3>
+                <p style={{ fontSize: '0.86rem', color: '#7E8BA0', margin: '4px 0 0' }}>
+                  Direct expert guidance on pricing formulas, GI tag legal certifications, safe ceramic/textile packaging, and export standards.
+                </p>
+              </div>
+
+              {/* Quick Questions Carousel */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px' }}>
+                {[
+                  "How should I price my handcrafted piece fairly?",
+                  "How do I apply for a Geographical Indication (GI) user tag?",
+                  "What is the best way to package fragile pottery for courier?",
+                  "How do I take high-quality listing photos with my phone?"
+                ].map((prompt, pIdx) => (
+                  <button
+                    key={pIdx}
+                    onClick={() => handleAskSaathi(prompt)}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      padding: '8px 14px',
+                      borderRadius: 'var(--radius-full)',
+                      border: '1px solid #D5C5B2',
+                      backgroundColor: '#FFF',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: '#1A3459',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    💬 {prompt}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chat Thread Container */}
+              <div style={{
+                backgroundColor: '#FFF',
+                border: '1px solid #EBE4D5',
+                borderRadius: 'var(--radius-lg)',
+                padding: '20px',
+                height: '420px',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingRight: '8px' }}>
+                  {saathiMessages.map((msg, mIdx) => (
+                    <div 
+                      key={mIdx}
+                      style={{
+                        alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        backgroundColor: msg.sender === 'user' ? '#1A3459' : '#F5EFE6',
+                        color: msg.sender === 'user' ? '#FFF' : '#2D2926',
+                        padding: '12px 16px',
+                        borderRadius: msg.sender === 'user' ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
+                        fontSize: '0.88rem',
+                        lineHeight: 1.55,
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
+                      }}
+                    >
+                      <div style={{ whiteSpace: 'pre-line' }}>{msg.text}</div>
+                      {msg.tip && (
+                        <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px solid rgba(0, 0, 0, 0.1)', fontSize: '0.78rem', fontStyle: 'italic', color: '#68793D' }}>
+                          💡 Tip: {msg.tip}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {isSaathiThinking && (
+                    <div style={{ alignSelf: 'flex-start', padding: '10px 14px', backgroundColor: '#F5EFE6', borderRadius: '14px', fontSize: '0.82rem', color: '#7E8BA0' }}>
+                      Aaroh Saathi is consulting cultural heritage archives...
+                    </div>
+                  )}
+                </div>
+
+                {/* Input Bar */}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #EBE4D5' }}>
+                  <input
+                    type="text"
+                    value={saathiInput}
+                    onChange={(e) => setSaathiInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAskSaathi()}
+                    placeholder="Ask about pricing, GI certification, natural dye recipes, or packaging..."
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      borderRadius: 'var(--radius-full)',
+                      border: '1px solid #D5C5B2',
+                      fontSize: '0.88rem',
+                      outline: 'none'
+                    }}
+                  />
+                  <button
+                    onClick={() => handleAskSaathi()}
+                    disabled={isSaathiThinking || !saathiInput.trim()}
+                    style={{
+                      padding: '10px 22px',
+                      borderRadius: 'var(--radius-full)',
+                      backgroundColor: '#1A3459',
+                      color: '#FFF',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      opacity: (!saathiInput.trim() || isSaathiThinking) ? 0.6 : 1
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeView === 'listings' && (
             <div style={{ padding: '28px 32px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

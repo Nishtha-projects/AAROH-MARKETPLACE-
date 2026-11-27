@@ -11,6 +11,9 @@ import { checkSmsConfigStatus } from './services/smsService.js';
 import { checkTurnstileConfigStatus } from './services/captchaService.js';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import marketplaceRoutes from './routes/marketplaceRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+
 import './database/db.js'; // Ensure database is initialized
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +74,30 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/ai', aiRoutes);
+
+// Direct REST aliases
+app.use('/api/products', (req, res, next) => {
+  req.url = '/products' + (req.url === '/' ? '' : req.url);
+  marketplaceRoutes(req, res, next);
+});
+app.use('/api/orders', (req, res, next) => {
+  req.url = '/orders' + (req.url === '/' ? '' : req.url);
+  marketplaceRoutes(req, res, next);
+});
+app.use('/api/artisans', (req, res, next) => {
+  req.url = '/artisans' + (req.url === '/' ? '' : req.url);
+  marketplaceRoutes(req, res, next);
+});
+app.use('/api/enquiries', (req, res, next) => {
+  req.url = '/enquiries' + (req.url === '/' ? '' : req.url);
+  marketplaceRoutes(req, res, next);
+});
+app.use('/api/commissions', (req, res, next) => {
+  req.url = '/commissions' + (req.url === '/' ? '' : req.url);
+  marketplaceRoutes(req, res, next);
+});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

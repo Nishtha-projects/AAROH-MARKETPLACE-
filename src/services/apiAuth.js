@@ -29,9 +29,13 @@ export const getStoredUser = () => {
 };
 
 export const storeSession = (token, user) => {
+  if (token) {
+    try { localStorage.setItem('aaroh_jwt_token', token); } catch {}
+  }
   if (user) {
     try {
       localStorage.setItem(CACHED_USER_KEY, JSON.stringify(user));
+      localStorage.setItem('aaroh_authenticated_user', JSON.stringify(user));
     } catch {}
   }
   notifyListeners(user);
@@ -45,7 +49,9 @@ export const getStoredToken = () => {
     console.warn('[apiAuth] Failed to read stored token:', e);
     return null;
   }
-}; {
+};
+
+export const clearSession = () => {
   try {
     localStorage.removeItem(CACHED_USER_KEY);
     localStorage.removeItem('aaroh_jwt_token');
@@ -105,8 +111,10 @@ export const subscribeToAuthService = (callback) => {
  * Universal fallback fetch helper for local backend
  */
 const apiRequest = async (endpoint, options = {}) => {
+    const token = getStoredToken();
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ` } : {}),
     ...options.headers
   };
 
@@ -457,7 +465,15 @@ export const sendPhoneOtp = resendPhoneOtp;
 // ============================================================================
 // 4. LOGIN (Supabase Auth)
 // ============================================================================
-export const login = async ({ identifier, email, phone, phone_number, password, captchaToken }) => {
+export const login = async (input, maybePassword, maybeCaptcha) => {
+  let identifier, email, phone, phone_number, password, captchaToken;
+  if (typeof input === 'string') {
+    identifier = input;
+    password = maybePassword;
+    captchaToken = maybeCaptcha;
+  } else if (input && typeof input === 'object') {
+    ({ identifier, email, phone, phone_number, password, captchaToken } = input);
+  }
   const loginId = (identifier || email || phone_number || phone || '').trim();
 
   if (isSupabaseConfigured() && supabase) {
@@ -529,7 +545,12 @@ export const login = async ({ identifier, email, phone, phone_number, password, 
   return res;
 };
 
-export const loginWithCredentials = login;
+export const loginWithCredentials = (idOrObj, pwd, cap) => {
+  if (typeof idOrObj === 'string') {
+    return login(idOrObj, pwd, cap);
+  }
+  return login(idOrObj);
+};
 
 // ============================================================================
 // 5. LOGOUT (Supabase Auth)
@@ -713,10 +734,10 @@ export const checkPreSignup = async ({ email, phone }) => {
   });
 };
 
-export const sendSignupVerification = async ({ fullName, email, phone, verificationMethod }) => {
+export const sendSignupVerification = async ({ fullName, email, phone, verificationMethod, captchaToken }) => {
   return await apiRequest('/api/auth/send-signup-verification', {
     method: 'POST',
-    body: JSON.stringify({ fullName, email, phone, verificationMethod })
+    body: JSON.stringify({ fullName, email, phone, verificationMethod, captchaToken })
   });
 };
 
@@ -795,6 +816,31 @@ export const initiateMicrosoftLogin = async ({ role = 'customer' } = {}) => {
     throw err;
   }
   window.location.href = data.url;
+};
+
+
+export const requestEmailOtp = async (email, purpose = 'signup', displayName = '', captchaToken = '') => {
+  if (purpose === 'signup') {
+    return await sendSignupVerification({ fullName: displayName, email, verificationMethod: 'email', captchaToken });
+  } else if (purpose === 'forgot_password') {
+    return await forgotPassword({ identifier: email, captchaToken });
+  } else {
+    return await sendLoginOtp({ identifier: email, captchaToken });
+  }
+};
+
+export const verifyOtpCode = async (email, code, purpose = 'signup') => {
+  if (purpose === 'signup') {
+    return await verifySignupOtp({ email, identifier: email, code });
+  } else if (purpose === 'forgot_password') {
+    return await verifyPasswordResetOtp({ identifier: email, code });
+  } else {
+    return await verifyLoginOtp({ identifier: email, code });
+  }
+};
+
+export const completePasswordRegistration = async ({ actionToken, name, phone, password, role = 'customer' }) => {
+  return await completeSignup({ actionToken, password, confirmPassword: password, role });
 };
 
 export const verifyGoogleIdToken = async ({ idToken, role = 'customer' }) => {

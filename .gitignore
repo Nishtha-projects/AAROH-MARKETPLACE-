@@ -31,8 +31,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
 # Local database and temporary files
 *.db
 *.log
 server/.demo-otp-latest.json
 server/.demo-otps.log
+
+# Scratch and media recordings
+*.mp4
+*.pdf
+demo_recording/
+scratch_*
+compile_demo_video.mjs
+generate_soundtrack.mjs
+record_full_demo.mjs
+frontend_architecture_report.html

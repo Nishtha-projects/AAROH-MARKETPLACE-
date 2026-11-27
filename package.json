@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/start-all.mjs",
+    "start": "node scripts/start-all.mjs",
+    "dev:frontend": "vite",
+    "dev:backend": "node server/server.js",
     "server": "node server/server.js",
     "server:dev": "node --watch server/server.js",
     "db:inspect": "node server/inspect-db.js",

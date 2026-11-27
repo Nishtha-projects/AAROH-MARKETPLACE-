@@ -1,9 +1,9 @@
 import React from 'react';
 import { ShieldCheck, Heart, Sparkles, Feather, Compass, Mail, Phone, ExternalLink } from 'lucide-react';
-import { TRANSLATIONS } from '../data/translations';
+import { getTranslation } from '../data/translations';
 
 export const Footer = ({ lang, onOpenRecognition }) => {
-  const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+  const t = (k) => getTranslation(lang, k);
 
   return (
     <footer style={{
@@ -37,12 +37,12 @@ export const Footer = ({ lang, onOpenRecognition }) => {
                 🪷
               </div>
               <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                Aaroh
+                {t('brand_name')}
               </span>
             </div>
 
             <p style={{ fontSize: '0.92rem', lineHeight: 1.65, marginBottom: '18px' }}>
-              An animated cultural journal and marketplace celebrating traditional and lesser-known Indian arts. We empower artisans to present their creations in their own words, ensuring fair trade and living heritage preservation.
+              {t('footer_tagline')}
             </p>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--accent-olive)', fontWeight: 600 }}>
@@ -54,7 +54,7 @@ export const Footer = ({ lang, onOpenRecognition }) => {
           {/* Living Crafts Lineages */}
           <div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Living Traditions
+              {t('footer_traditions')}
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem' }}>
               <li><a href="#marketplace-section" style={{ transition: 'color 0.2s' }}>Madhubani / Mithila Painting (Bihar)</a></li>
@@ -69,7 +69,7 @@ export const Footer = ({ lang, onOpenRecognition }) => {
           {/* Cultural Knowledge & Tools */}
           <div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Cultural Archives
+              {t('footer_archives')}
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem' }}>
               <li>
@@ -90,7 +90,7 @@ export const Footer = ({ lang, onOpenRecognition }) => {
           {/* Governance, Security & Contact */}
           <div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Ethics & Trust
+              {t('footer_ethics')}
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.9rem' }}>
               <li><a href="#top">Artisan Welfare Fund (2% Direct Contribution)</a></li>

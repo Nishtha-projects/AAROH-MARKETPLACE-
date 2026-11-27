@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, Globe, Moon, Sun, User } from 'lucide-react';
-import { getTranslation } from '../data/translations';
+import { getTranslation, getLanguageInfo } from '../data/translations';
 import { CulturalParticles } from './CulturalParticles';
 
 const MARQUEE_CRAFTS = [
@@ -28,6 +28,7 @@ export const OpeningCoverSection = ({
   onScrollToVision
 }) => {
   const t = (k) => getTranslation(lang, k);
+  const currentLangInfo = getLanguageInfo(lang);
   const [scrollY, setScrollY] = useState(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 
@@ -115,7 +116,7 @@ export const OpeningCoverSection = ({
           transition: 'transform 0.25s ease'
         }}>
           <span className="animate-float">🪷</span>
-          <span>Aaroh • Cultural Journal</span>
+          <span>{t('brand_name')} • {t('nav_journal')}</span>
         </div>
 
         {/* Action Controls */}
@@ -128,21 +129,21 @@ export const OpeningCoverSection = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '8px 16px',
-              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+              padding: '8px 18px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(8px)',
-              border: '1px solid var(--border-strong)',
+              border: '1.5px solid var(--accent-indigo)',
               borderRadius: 'var(--radius-full)',
-              fontSize: '0.86rem',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
+              fontSize: '0.88rem',
+              fontWeight: 700,
+              color: 'var(--accent-indigo)',
               boxShadow: 'var(--shadow-sm)',
               cursor: 'pointer'
             }}
-            title="Search and select from 22 Indian scheduled languages"
+            title={`Active Language: ${currentLangInfo.nativeName} (${currentLangInfo.name}) - Click to switch`}
           >
-            <Globe size={15} color="var(--accent-indigo)" />
-            <span style={{ textTransform: 'capitalize' }}>{lang} • Language</span>
+            <Globe size={16} color="var(--accent-indigo)" />
+            <span>{currentLangInfo.nativeName} ({currentLangInfo.name})</span>
           </button>
 
           {/* Theme Mode Toggle */}
@@ -262,7 +263,7 @@ export const OpeningCoverSection = ({
             fontFamily: 'var(--font-serif)',
             fontStyle: 'italic'
           }}>
-            “Where Indian crafts are remembered not as museum relics, but as living songs sung in the artisan’s own voice.”
+            {t('hero_quote')}
           </p>
         </div>
       </div>

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
+import React, { useState } from 'react';
 import { 
   ShoppingBag, 
   User, 
@@ -17,13 +16,9 @@ import {
   VolumeX,
   Compass,
   LogOut,
-  KeyRound,
-  Shield,
-  Check,
-  ChevronDown
+  KeyRound
 } from 'lucide-react';
-import { SUPPORTED_LANGUAGES } from '../i18n';
-import { TRANSLATIONS } from '../data/translations';
+import { getTranslation, getLanguageInfo } from '../data/translations';
 
 export const Header = ({
   lang,
@@ -38,62 +33,23 @@ export const Header = ({
   onOpenCart,
   currentUser,
   onOpenAuth,
-  onOpenAdmin,
   onOpenArtisanDash,
   onOpenCustomerOrders,
   onOpenRecognition,
   onOpenLanguageModal,
   onOpenSecurity,
+  onOpenAdmin,
   onSignOut,
   activeSection,
   setActiveSection
 }) => {
-  const { t: i18nTranslate, i18n } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMenuOpen, setPaletteMenuOpen] = useState(false);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
-  const langMenuRef = useRef(null);
-  const paletteMenuRef = useRef(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (langMenuRef.current && !langMenuRef.current.contains(e.target)) {
-        setLangMenuOpen(false);
-      }
-      if (paletteMenuRef.current && !paletteMenuRef.current.contains(e.target)) {
-        setPaletteMenuOpen(false);
-      }
-    };
-    if (langMenuOpen || paletteMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [langMenuOpen, paletteMenuOpen]);
-
-  const fallbackT = TRANSLATIONS[lang] || TRANSLATIONS.en || {};
-
-  const t = new Proxy(i18nTranslate, {
-    get(target, prop) {
-      if (typeof prop === 'string') {
-        const val = target(prop);
-        if (val && val !== prop) return val;
-        if (fallbackT && fallbackT[prop]) return fallbackT[prop];
-      }
-      return target[prop];
-    },
-    apply(target, thisArg, args) {
-      const res = Reflect.apply(target, thisArg, args);
-      if (res === args[0] && fallbackT && fallbackT[args[0]]) {
-        return fallbackT[args[0]];
-      }
-      return res;
-    }
-  });
+  const t = (k) => getTranslation(lang, k);
+  const currentLangInfo = getLanguageInfo(lang);
 
   const palettes = [
-
     { id: 'ivory-indigo', name: 'Ivory & Indigo', desc: 'Signature Heritage (Swallows & Rose)', color: '#1A3459' },
     { id: 'terracotta', name: 'Terracotta', desc: 'Burnt Sienna & Earthen Clay', color: '#C25634' },
     { id: 'botanical', name: 'Botanical', desc: 'Forest Moss & Sage Parchment', color: '#2D4C3A' }
@@ -117,9 +73,9 @@ export const Header = ({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-ochre)' }}>
             <Sparkles size={14} />
-            <span style={{ fontWeight: 600 }}>{t.hero_badge}</span>
+            <span style={{ fontWeight: 600 }}>{t('hero_badge')}</span>
             <span style={{ opacity: 0.5 }}>•</span>
-            <span style={{ color: 'var(--text-secondary)' }}>All crafts directly empower indigenous artisans & guilds</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('hero_cover_sub')}</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -139,29 +95,8 @@ export const Header = ({
               title="Painting Visual Recognition & Archival Heritage Records"
             >
               <Compass size={13} />
-              <span>Cultural Archive & Recognition</span>
+              <span>{t('footer_archives')}</span>
             </button>
-
-            {onOpenAdmin && (
-              <button 
-                onClick={onOpenAdmin}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  color: 'var(--accent-ochre)',
-                  fontSize: '0.78rem',
-                  fontWeight: 600,
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-                title="Aaroh Administrator Dashboard (/admin)"
-              >
-                <Shield size={13} />
-                <span>Admin Portal</span>
-              </button>
-            )}
 
             <button 
               onClick={() => {
@@ -185,8 +120,29 @@ export const Header = ({
               title="Account Security & Authentication Status"
             >
               <ShieldCheck size={13} />
-              <span>{currentUser ? "Security Sanctuary (Verified)" : t.security_certificate}</span>
+              <span>{currentUser ? "Security Sanctuary (Verified)" : t('footer_ethics')}</span>
             </button>
+
+            {onOpenAdmin && (
+              <button 
+                onClick={onOpenAdmin}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'var(--accent-terracotta)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.78rem',
+                  fontWeight: 600
+                }}
+                title="System Administration & Artisan Registry"
+              >
+                <KeyRound size={13} />
+                <span>Admin Portal</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -207,8 +163,8 @@ export const Header = ({
               <span className="animate-float" style={{ fontSize: '22px', display: 'inline-block' }}>🪷</span>
             </div>
             <div className="brand-text-wrap">
-              <span className="brand-title">Aaroh</span>
-              <span className="brand-subtitle">आरोह • Cultural Journal</span>
+              <span className="brand-title">{t('brand_name')}</span>
+              <span className="brand-subtitle">{currentLangInfo.nativeName} • {t('nav_journal')}</span>
             </div>
           </a>
 
@@ -223,7 +179,7 @@ export const Header = ({
                     document.getElementById('cover-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  Cover
+                  {t('nav_cover')}
                 </button>
               </li>
               <li>
@@ -234,7 +190,7 @@ export const Header = ({
                     document.getElementById('vision-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  Aaroh’s Vision
+                  {t('nav_vision')}
                 </button>
               </li>
               <li>
@@ -245,7 +201,7 @@ export const Header = ({
                     document.getElementById('explore-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  {t.nav_marketplace || "Explore Crafts"}
+                  {t('nav_explore')}
                 </button>
               </li>
               <li>
@@ -256,7 +212,7 @@ export const Header = ({
                     document.getElementById('commissions-section')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  {t.nav_commissions || "Commissions"}
+                  {t('nav_commissions')}
                 </button>
               </li>
             </ul>
@@ -264,124 +220,22 @@ export const Header = ({
 
           {/* Controls & Actions */}
           <div className="header-actions">
-            {/* Prominent Multilingual Language Selector */}
-            <div ref={langMenuRef} style={{ position: 'relative' }}>
-              <button 
-                className="btn-icon" 
-                onClick={() => setLangMenuOpen(!langMenuOpen)}
-                title="Select language / भाषा चुनें"
-                aria-label="Language selection"
-                style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  width: 'auto', 
-                  padding: '6px 12px',
-                  backgroundColor: langMenuOpen ? 'var(--bg-surface-subtle)' : 'transparent',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--radius-full)'
-                }}
-              >
-                <Globe size={16} style={{ color: 'var(--accent-indigo)' }} />
-                <span style={{ fontSize: '0.82rem', fontWeight: 700 }}>
-                  {SUPPORTED_LANGUAGES.find(l => l.code === lang)?.nativeName || lang.toUpperCase()}
-                </span>
-                <ChevronDown size={14} style={{ opacity: 0.7 }} />
-              </button>
-
-              {langMenuOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '115%',
-                  right: 0,
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--radius-md)',
-                  boxShadow: 'var(--shadow-lg)',
-                  width: '260px',
-                  maxHeight: '380px',
-                  overflowY: 'auto',
-                  zIndex: 1100,
-                  padding: '8px'
-                }}>
-                  <div style={{ 
-                    fontSize: '0.72rem', 
-                    fontWeight: 700, 
-                    textTransform: 'uppercase', 
-                    color: 'var(--text-muted)', 
-                    padding: '6px 10px',
-                    letterSpacing: '0.05em',
-                    borderBottom: '1px solid var(--border-subtle)',
-                    marginBottom: '4px'
-                  }}>
-                    Select Language / भाषा चुनें
-                  </div>
-
-                  {SUPPORTED_LANGUAGES.map((sl) => {
-                    const active = lang === sl.code;
-                    return (
-                      <button
-                        key={sl.code}
-                        onClick={() => {
-                          i18n.changeLanguage(sl.code);
-                          setLang(sl.code);
-                          setLangMenuOpen(false);
-                        }}
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '8px 10px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          borderRadius: 'var(--radius-sm)',
-                          backgroundColor: active ? 'var(--bg-surface-subtle)' : 'transparent',
-                          border: active ? '1px solid var(--accent-indigo)' : '1px solid transparent',
-                          color: active ? 'var(--accent-indigo)' : 'var(--text-primary)',
-                          fontWeight: active ? 700 : 500,
-                          fontSize: '0.88rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1rem' }}>{sl.flag}</span>
-                          <div>
-                            <span style={{ display: 'block', lineHeight: 1.2 }}>{sl.nativeName}</span>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{sl.name}</span>
-                          </div>
-                        </div>
-                        {active && <Check size={16} style={{ color: 'var(--accent-indigo)' }} />}
-                      </button>
-                    );
-                  })}
-
-                  <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '6px', paddingTop: '6px' }}>
-                    <button
-                      onClick={() => {
-                        setLangMenuOpen(false);
-                        if (typeof onOpenLanguageModal === 'function') onOpenLanguageModal();
-                      }}
-                      style={{
-                        width: '100%',
-                        textAlign: 'center',
-                        padding: '8px',
-                        fontSize: '0.78rem',
-                        color: 'var(--accent-ochre)',
-                        fontWeight: 600,
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      More Languages (22 Indian Languages)...
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Searchable 22 Indian Languages Modal Trigger */}
+            <button 
+              className="btn-icon" 
+              onClick={onOpenLanguageModal}
+              title={`Active Language: ${currentLangInfo.nativeName} (${currentLangInfo.name}) - Click to switch`}
+              aria-label="Language selection"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', width: 'auto', padding: '6px 14px', borderRadius: 'var(--radius-full)', border: '1.5px solid var(--accent-indigo)' }}
+            >
+              <Globe size={16} color="var(--accent-indigo)" />
+              <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--accent-indigo)' }}>
+                {currentLangInfo.nativeName}
+              </span>
+            </button>
 
             {/* Palette Switcher */}
-            <div ref={paletteMenuRef} style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
               <button 
                 className="btn-icon"
                 onClick={() => setPaletteMenuOpen(!paletteMenuOpen)}
@@ -506,22 +360,13 @@ export const Header = ({
             {/* User Account / Sign In */}
             {currentUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {currentUser.role === 'admin' ? (
-                  <button 
-                    className="btn-primary" 
-                    onClick={onOpenAdmin}
-                    style={{ padding: '8px 18px', fontSize: '0.88rem', backgroundColor: '#D97706', borderColor: '#B45309' }}
-                  >
-                    <Shield size={15} />
-                    <span>Admin Console</span>
-                  </button>
-                ) : currentUser.role === 'artisan' ? (
+                {currentUser.role === 'artisan' ? (
                   <button 
                     className="btn-primary" 
                     onClick={onOpenArtisanDash}
                     style={{ padding: '8px 18px', fontSize: '0.88rem' }}
                   >
-                    <span>{t.btn_artisan_dashboard}</span>
+                    <span>{t('btn_artisan_dashboard')}</span>
                   </button>
                 ) : (
                   <button 
@@ -564,7 +409,7 @@ export const Header = ({
                 style={{ padding: '9px 20px', fontSize: '0.9rem' }}
               >
                 <User size={16} />
-                <span>{t.btn_signin}</span>
+                <span>{t('btn_signin')}</span>
               </button>
             )}
           </div>

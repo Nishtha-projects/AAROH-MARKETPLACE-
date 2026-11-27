@@ -1,3 +1,4 @@
+import { fetchProducts, fetchCustomerOrders } from './services/apiMarketplace';
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { OpeningCoverSection } from './components/OpeningCoverSection';
@@ -19,13 +20,13 @@ import { SecurityModal } from './components/SecurityModal';
 import { Footer } from './components/Footer';
 
 import { MOCK_PRODUCTS, MOCK_ARTISANS, MOCK_ORDERS, MOCK_ENQUIRIES } from './data/mockData';
+import { getTranslation, getLanguageInfo } from './data/translations';
 import { 
   subscribeToAuthService, 
   verifyActiveSession, 
   logoutUser, 
   getStoredUser 
 } from './services/apiAuth';
-import i18n, { applyLanguageSettings } from './i18n';
 
 export function App() {
   // Theme and Locale State
@@ -34,6 +35,22 @@ export function App() {
   const [palette, setPalette] = useState(() => localStorage.getItem('aaroh_palette') || 'ivory-indigo');
   // Default to standard rich motion mode so animations are immediately visible
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [langToast, setLangToast] = useState(null);
+
+  const t = (k) => getTranslation(lang, k);
+
+  const handleSelectLanguage = (newLang) => {
+    setLang(newLang);
+    const info = getLanguageInfo(newLang);
+    setLangToast({
+      name: info.name,
+      nativeName: info.nativeName,
+      code: newLang
+    });
+    setTimeout(() => {
+      setLangToast(null);
+    }, 3800);
+  };
 
   // Application Data State
   const [products, setProducts] = useState(MOCK_PRODUCTS);
@@ -45,6 +62,29 @@ export function App() {
 
   // Auth & User State
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
+
+  // Load persistent marketplace data from database
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDbData() {
+      try {
+        const dbProducts = await fetchProducts();
+        if (isMounted && dbProducts && dbProducts.length > 0) {
+          setProducts(dbProducts);
+        }
+        if (currentUser?.email) {
+          const dbOrders = await fetchCustomerOrders(currentUser.email);
+          if (isMounted && dbOrders && dbOrders.length > 0) {
+            setOrders(dbOrders);
+          }
+        }
+      } catch (e) {
+        console.warn('[Marketplace Load]', e);
+      }
+    }
+    loadDbData();
+    return () => { isMounted = false; };
+  }, [currentUser?.email]);
 
   // Modal Visibility States
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -65,30 +105,29 @@ export function App() {
   const [activeSection, setActiveSection] = useState('crafts');
 
   // Page View routing: 'marketplace' | 'login' | 'admin'
-  const determineView = () => {
-    const path = window.location.pathname.toLowerCase();
-    const hash = window.location.hash.toLowerCase();
+  const [currentView, setCurrentView] = useState(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
     if (path.startsWith('/admin') || hash === '#admin' || hash.startsWith('#/admin')) {
       return 'admin';
     }
-    if (hash === '#login' || hash.startsWith('#/login') || path === '/login') {
-      return 'login';
-    }
-    return 'marketplace';
-  };
-
-  const [currentView, setCurrentView] = useState(determineView);
+    return (hash === '#login' || hash === '#/login') ? 'login' : 'marketplace';
+  });
 
   useEffect(() => {
-    const handleLocationChange = () => {
-      setCurrentView(determineView());
+    const handleHashChange = () => {
+      const hash = window.location.hash || '';
+      const path = window.location.pathname || '';
+      if (path.startsWith('/admin') || hash === '#admin' || hash.startsWith('#/admin')) {
+        setCurrentView('admin');
+      } else if (hash === '#login' || hash === '#/login') {
+        setCurrentView('login');
+      } else {
+        setCurrentView('marketplace');
+      }
     };
-    window.addEventListener('hashchange', handleLocationChange);
-    window.addEventListener('popstate', handleLocationChange);
-    return () => {
-      window.removeEventListener('hashchange', handleLocationChange);
-      window.removeEventListener('popstate', handleLocationChange);
-    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   // Restore authenticated session from backend / persistent token
@@ -107,7 +146,6 @@ export function App() {
           } catch {}
         }
 
-        // Clean hash from browser URL without reloading
         window.history.replaceState(null, '', window.location.pathname);
         const verifiedUser = await verifyActiveSession();
 
@@ -137,17 +175,7 @@ export function App() {
     setCurrentView('login');
   };
 
-  const handleOpenAdmin = () => {
-    if (window.location.pathname !== '/admin') {
-      window.history.pushState({}, '', '/admin');
-    }
-    setCurrentView('admin');
-  };
-
   const handleReturnToHome = () => {
-    if (window.location.pathname !== '/') {
-      window.history.pushState({}, '', '/');
-    }
     window.location.hash = '';
     setCurrentView('marketplace');
   };
@@ -169,25 +197,8 @@ export function App() {
   }, [reducedMotion]);
 
   useEffect(() => {
-    applyLanguageSettings(lang);
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('aaroh_lang', lang);
-    }
-    if (i18n.language !== lang) {
-      i18n.changeLanguage(lang);
-    }
-  }, [lang]);
-
-  useEffect(() => {
-    const handleLanguageChanged = (newLng) => {
-      if (newLng && newLng !== lang) {
-        setLang(newLng);
-      }
-    };
-    i18n.on('languageChanged', handleLanguageChanged);
-    return () => {
-      i18n.off('languageChanged', handleLanguageChanged);
-    };
+    document.documentElement.setAttribute('lang', lang);
+    localStorage.setItem('aaroh_lang', lang);
   }, [lang]);
 
 
@@ -341,7 +352,6 @@ export function App() {
       <div className="aaroh-app-wrapper" data-palette={palette} data-theme-mode={themeMode} data-reduced-motion={reducedMotion.toString()}>
         <LoginPage
           lang={lang}
-          setLang={setLang}
           onOpenLanguageModal={() => setIsLanguageModalOpen(true)}
           themeMode={themeMode}
           setThemeMode={setThemeMode}
@@ -353,8 +363,32 @@ export function App() {
           isOpen={isLanguageModalOpen}
           onClose={() => setIsLanguageModalOpen(false)}
           currentLang={lang}
-          onSelectLanguage={(newLang) => setLang(newLang)}
+          onSelectLanguage={handleSelectLanguage}
         />
+        {langToast && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: 'var(--accent-indigo)',
+              color: '#FFF',
+              padding: '12px 26px',
+              borderRadius: 'var(--radius-full)',
+              boxShadow: '0 12px 36px rgba(26, 52, 89, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              zIndex: 9999,
+              fontSize: '0.92rem',
+              fontWeight: 600
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>🪷</span>
+            <span>{t('lang_changed_toast')} <strong>{langToast.nativeName} ({langToast.name})</strong></span>
+          </div>
+        )}
       </div>
     );
   }
@@ -396,7 +430,6 @@ export function App() {
         currentUser={currentUser}
         onSignOut={handleSignOut}
         onOpenAuth={handleOpenAuth}
-        onOpenAdmin={handleOpenAdmin}
         onOpenArtisanDash={handleOpenArtisanDash}
         onOpenCustomerOrders={handleOpenCustomerOrders}
         onOpenRecognition={() => setIsRecognitionOpen(true)}
@@ -446,13 +479,13 @@ export function App() {
             }}>
               <div>
                 <span className="craft-seal-badge" style={{ marginBottom: '14px' }}>
-                  Custom Commissions & Rights
+                  {t('commissions_badge')}
                 </span>
                 <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', marginBottom: '16px' }}>
-                  Commission Custom Heritage Artworks
+                  {t('commissions_title')}
                 </h2>
                 <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '24px' }}>
-                  Have an ancestral heirloom, sacred family motif, or architectural requirement? Collaborate directly with recognized master artisans under transparent copyright and fair wage agreements.
+                  {t('commissions_desc')}
                 </p>
                 <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
                   <button
@@ -463,14 +496,14 @@ export function App() {
                     }}
                     style={{ padding: '14px 28px', fontSize: '1rem' }}
                   >
-                    Start a Custom Commission
+                    {t('commissions_btn_start')}
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={() => setIsRecognitionOpen(true)}
                     style={{ padding: '14px 24px', fontSize: '1rem' }}
                   >
-                    Inspect Cultural Recognition Tool
+                    {t('commissions_btn_recognition')}
                   </button>
                 </div>
               </div>
@@ -482,20 +515,20 @@ export function App() {
                 border: '1px solid var(--border-subtle)'
               }}>
                 <h4 style={{ fontSize: '1.1rem', color: 'var(--accent-indigo)', marginBottom: '12px' }}>
-                  How Aaroh Protects Artisans & Creators
+                  {t('commissions_protect_title')}
                 </h4>
                 <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.92rem' }}>
                   <li style={{ display: 'flex', gap: '10px' }}>
                     <span style={{ color: 'var(--accent-olive)', fontWeight: 'bold' }}>✓</span>
-                    <span><strong>Verified Image Rights:</strong> Customers verify copyright permission before submitting reference images.</span>
+                    <span><strong>{t('commissions_rule_1_title')}:</strong> {t('commissions_rule_1_desc')}</span>
                   </li>
                   <li style={{ display: 'flex', gap: '10px' }}>
                     <span style={{ color: 'var(--accent-olive)', fontWeight: 'bold' }}>✓</span>
-                    <span><strong>Transparent Royalties:</strong> 85% goes to crafting artisan, 10% to original motif rights holder, 5% sustainable platform fee.</span>
+                    <span><strong>{t('commissions_rule_2_title')}:</strong> {t('commissions_rule_2_desc')}</span>
                   </li>
                   <li style={{ display: 'flex', gap: '10px' }}>
                     <span style={{ color: 'var(--accent-olive)', fontWeight: 'bold' }}>✓</span>
-                    <span><strong>Mutual Agreement:</strong> Both sides agree on price, delivery time, and usage rights before payment escrow.</span>
+                    <span><strong>{t('commissions_rule_3_title')}:</strong> {t('commissions_rule_3_desc')}</span>
                   </li>
                 </ul>
               </div>
@@ -577,7 +610,6 @@ export function App() {
         onClose={() => setIsArtisanDashOpen(false)}
         currentUser={currentUser}
         onSignOut={handleSignOut}
-        onOpenSecurity={() => setIsSecurityOpen(true)}
         artisan={MOCK_ARTISANS[0]}
         products={products}
         orders={orders}
@@ -621,8 +653,35 @@ export function App() {
         isOpen={isLanguageModalOpen}
         onClose={() => setIsLanguageModalOpen(false)}
         currentLang={lang}
-        onSelectLanguage={(newLang) => setLang(newLang)}
+        onSelectLanguage={handleSelectLanguage}
       />
+
+      {/* Floating Language Switch Confirmation Banner */}
+      {langToast && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: 'var(--accent-indigo)',
+            color: '#FFF',
+            padding: '12px 28px',
+            borderRadius: 'var(--radius-full)',
+            boxShadow: '0 12px 36px rgba(26, 52, 89, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            zIndex: 9999,
+            fontSize: '0.94rem',
+            fontWeight: 600,
+            border: '1px solid rgba(255, 255, 255, 0.25)'
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>🪷</span>
+          <span>{t('lang_changed_toast')} <strong>{langToast.nativeName} ({langToast.name})</strong></span>
+        </div>
+      )}
 
       {/* Global Footer */}
       <Footer

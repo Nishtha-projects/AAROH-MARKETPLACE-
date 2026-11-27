@@ -1,3 +1,4 @@
+import { seedMarketplaceData } from './seedMarketplace.js';
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -114,6 +115,133 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_pending_email ON pending_signups(email_normalized);
   CREATE INDEX IF NOT EXISTS idx_pending_phone ON pending_signups(phone);
   CREATE INDEX IF NOT EXISTS idx_pending_unique_id ON pending_signups(unique_user_id);
+
+  CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    craft_id TEXT NOT NULL,
+    craft_name TEXT NOT NULL,
+    artisan_id TEXT NOT NULL,
+    artisan_name TEXT NOT NULL,
+    artisan_location TEXT,
+    price REAL NOT NULL,
+    availability TEXT DEFAULT 'In Stock',
+    status TEXT DEFAULT 'Published',
+    stock_count INTEGER DEFAULT 1,
+    ready_made INTEGER DEFAULT 1,
+    lead_time_days INTEGER DEFAULT 3,
+    image TEXT,
+    gallery TEXT,
+    materials TEXT,
+    dimensions TEXT,
+    weight TEXT,
+    description TEXT,
+    gi_certified INTEGER DEFAULT 1,
+    gi_tag TEXT,
+    tags TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_products_craft ON products(craft_id);
+  CREATE INDEX IF NOT EXISTS idx_products_artisan ON products(artisan_id);
+
+  CREATE TABLE IF NOT EXISTS artisans (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    name TEXT NOT NULL,
+    title TEXT,
+    craft TEXT NOT NULL,
+    location TEXT NOT NULL,
+    experience_years INTEGER DEFAULT 10,
+    avatar TEXT,
+    bio TEXT,
+    verified INTEGER DEFAULT 1,
+    badge TEXT,
+    rating REAL DEFAULT 4.9,
+    reviews_count INTEGER DEFAULT 50,
+    active_products_count INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    order_number TEXT UNIQUE NOT NULL,
+    customer_id TEXT,
+    customer_name TEXT NOT NULL,
+    customer_email TEXT NOT NULL,
+    customer_phone TEXT,
+    customer_city TEXT,
+    shipping_address TEXT,
+    items TEXT NOT NULL,
+    total_amount REAL NOT NULL,
+    status TEXT DEFAULT 'Confirmed',
+    payment_mode TEXT DEFAULT 'UPI (Verified Payment)',
+    tracking_code TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id, customer_email);
+
+  CREATE TABLE IF NOT EXISTS enquiries (
+    id TEXT PRIMARY KEY,
+    product_id TEXT,
+    product_title TEXT NOT NULL,
+    artisan_id TEXT NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT,
+    customer_email TEXT NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    purpose TEXT,
+    preferred_contact TEXT DEFAULT 'WhatsApp',
+    message TEXT NOT NULL,
+    status TEXT DEFAULT 'New Enquiry',
+    artisan_response TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_enquiries_artisan ON enquiries(artisan_id);
+
+  CREATE TABLE IF NOT EXISTS commissions (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT,
+    customer_name TEXT NOT NULL,
+    customer_email TEXT NOT NULL,
+    customer_phone TEXT,
+    artisan_id TEXT NOT NULL,
+    artisan_name TEXT NOT NULL,
+    craft_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    budget REAL NOT NULL,
+    dimensions TEXT,
+    timeline_weeks INTEGER DEFAULT 4,
+    reference_images TEXT,
+    status TEXT DEFAULT 'Requested',
+    escrow_status TEXT DEFAULT 'Advance Pending (25%)',
+    escrow_amount REAL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS cultural_heritage (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    region TEXT NOT NULL,
+    gi_certified INTEGER DEFAULT 1,
+    gi_tag TEXT,
+    materials TEXT,
+    motifs TEXT,
+    description TEXT NOT NULL,
+    reviewer TEXT,
+    citations TEXT,
+    created_at TEXT NOT NULL
+  );
+
 `);
 
 // Run migrations for existing database columns and nullability
@@ -397,5 +525,8 @@ export const initializeAdminFromEnv = () => {
 
 // Run admin initialization check on module load if environment variables are provided
 initializeAdminFromEnv();
+
+// Seed marketplace entities (products, artisans, orders, enquiries, crafts) if empty
+seedMarketplaceData();
 
 export default db;

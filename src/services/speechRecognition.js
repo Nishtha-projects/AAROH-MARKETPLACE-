@@ -1,3 +1,4 @@
+import { calculateArtisanPrice } from './pricingEngine';
 /**
  * Aaroh Artisan Voice Recognition & Living Oral Archive Service
  * Provides real-time Speech-to-Text via Web Speech API across Indian languages,
