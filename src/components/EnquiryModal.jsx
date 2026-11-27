@@ -61,7 +61,7 @@ export const EnquiryModal = ({
               {product ? `Enquire about: ${product.title}` : 'Artisan Enquiry & Bulk Order'}
             </h3>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">✕</button>
         </div>
 
         <div className="modal-body">

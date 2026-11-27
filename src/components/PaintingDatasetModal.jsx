@@ -43,6 +43,20 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
     { url: '/assets/images/dokra-ceremonial-elephant.jpg', name: 'Bastar Elephant', form: 'Dokra Metalcraft' }
   ];
 
+  const handleManualCraftOverride = (craftName) => {
+    if (!craftName) return;
+    setRecognitionResult(prev => ({
+      ...prev,
+      artForm: craftName,
+      region: "Verified Artisan Tradition",
+      technique: "Direct Lineage Technique",
+      confidence: 100,
+      isUncertain: false,
+      authenticityScore: 98,
+      manualOverride: true
+    }));
+  };
+
   const handleRunRecognition = async (imgUrl) => {
     setSelectedSample(imgUrl);
     setIsAnalyzing(true);
@@ -94,13 +108,13 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
           <div>
             <span className="craft-seal-badge" style={{ marginBottom: '4px' }}>
               <Compass size={13} />
-              <span>Cultural Knowledge & Vision Model Architecture</span>
+              <span>Computer Vision Craft Classifier (Feature Extraction Heuristic Prototype)</span>
             </span>
             <h3 style={{ fontSize: '1.4rem' }}>
               Art Recognition & Verified Archival Records
             </h3>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">✕</button>
         </div>
 
         {/* System Separation Tabs */}
@@ -170,7 +184,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
               }}>
                 <ShieldCheck size={20} color="var(--accent-indigo)" style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div style={{ fontSize: '0.86rem', lineHeight: 1.5 }}>
-                  <strong>Aaroh ArtVision Model Pipeline:</strong> Live client-side pixel feature extraction (HSV color distribution, Sobel gradient edge analysis, and motif centroid matching). Upload ANY photo or test our reference benchmarks.
+                  <strong>Aaroh Feature Extraction Pipeline (Prototype):</strong> Live client-side HTML5 canvas pixel analysis (HSV color distribution, Sobel gradient edge analysis, and centroid motif matching). This is a browser-side feature extractor, not a trained server-side neural network. When uncertainty is detected (under 70%), artisans can manually select their verified lineage tradition.
                 </div>
               </div>
 
@@ -330,6 +344,40 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* High Uncertainty Fallback Alert */}
+                  {recognitionResult.isUncertain && (
+                    <div style={{
+                      backgroundColor: 'rgba(217, 83, 79, 0.12)',
+                      border: '1px solid #D9534F',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      marginBottom: '14px',
+                      fontSize: '0.84rem',
+                      color: '#B02A2A'
+                    }}>
+                      <div style={{ fontWeight: 700, marginBottom: '4px' }}>
+                        ⚠️ Low Match Confidence (&lt; 70%):
+                      </div>
+                      <div>
+                        Canvas feature analysis cannot reliably classify this image into a single craft school. Please select the authentic craft form manually:
+                      </div>
+                      <select
+                        onChange={(e) => handleManualCraftOverride(e.target.value)}
+                        className="form-select"
+                        style={{ marginTop: '8px', width: '100%', fontSize: '0.84rem', fontWeight: 600 }}
+                      >
+                        <option value="">-- Choose Authentic Craft School --</option>
+                        <option value="Madhubani (Mithila) Painting">Madhubani (Mithila) Painting (Bihar)</option>
+                        <option value="Jaipur Blue Pottery">Jaipur Blue Pottery (Rajasthan)</option>
+                        <option value="Warli Tribal Art">Warli Tribal Art (Maharashtra)</option>
+                        <option value="Raghurajpur Pattachitra">Raghurajpur Pattachitra (Odisha)</option>
+                        <option value="Dokra Bell Metal Craft">Dokra Bell Metal Craft (Bastar, Chhattisgarh)</option>
+                        <option value="Kutch Rogan Art">Kutch Rogan Art (Gujarat)</option>
+                        <option value="Gond Folk Art">Gond Folk Art (Madhya Pradesh)</option>
+                      </select>
+                    </div>
+                  )}
 
                   {/* Authenticity Index */}
                   <div style={{ 

@@ -1,152 +1,86 @@
 # AAROH MARKETPLACE
-### Where Tradition Meets Technology
+### Where Heritage Meets Technology • Elevating Indian Artisans
 
-**A Digital Marketplace Celebrating Indian Art, Culture & Craftsmanship**
+**A Conscious Marketplace & Cultural Archive for Traditional and Lesser-Known Indian Crafts**
 
 ---
 
-## 01. Project Overview
+## 01. Overview
 
-Aaroh Marketplace is a digital platform designed to promote traditional Indian handicrafts, regional artwork, and artisan products.
+**Aaroh** is a web application created to empower indigenous and master Indian artisans by connecting them directly with appreciative global patrons. Built with deep respect for Indian cultural heritage, Aaroh provides fair remuneration, oral provenance archiving, and transparent commerce without predatory middleman markups.
 
-The project aims to bridge the gap between traditional craftsmanship and modern technology by creating a digital space where artisans can showcase their work and customers can discover India's rich cultural heritage.
+---
 
-**Project Status:** Work in Progress
+## 02. Architecture & Quick Start
 
-## 02. Problem Statement
+Aaroh runs as a unified full-stack system powered by:
+- **Client (Vite + React 18):** Running on port `5173` (with responsive mobile/desktop interfaces, 23 languages, and dark/light heritage palettes).
+- **Backend (Express + SQLite):** Running on port `5000` (persisting products, artisans, orders, enquiries, commissions, and user preferences).
+- **Reverse Proxy Gateway:** Running on port `3000` unifying frontend assets and API endpoints under a single port.
 
-Traditional Indian artisans often face challenges in reaching wider audiences, showcasing their craftsmanship, and adapting to the growing digital marketplace.
+### One-Command Unified Startup
+```bash
+# Install dependencies
+npm install
 
-Aaroh aims to address these challenges through a centralized digital platform that promotes artisan visibility and celebrates India's diverse artistic traditions.
-
-## 03. Project Objectives
-
-- Promote traditional Indian art and craftsmanship.
-- Create digital visibility for artisans.
-- Make regional artwork accessible to a wider audience.
-- Encourage cultural preservation through technology.
-- Provide an interactive marketplace experience.
-
-## 04. Key Features
-
-**Artisan Marketplace**
-- Explore traditional Indian crafts and handmade products.
-- Discover regional art forms and artisan collections.
-
-**Authentication & Security**
-- Google authentication integration.
-- Microsoft authentication integration.
-- Authentication and security-related interfaces.
-
-**Interactive Dashboards**
-- Artisan dashboard.
-- Admin dashboard.
-- Customer-oriented interfaces.
-
-**Multilingual Experience**
-- Multiple language translations.
-- Language selection interface.
-
-**Customer Engagement**
-- Product exploration and details.
-- Enquiry interfaces.
-- Custom commission interfaces.
-
-*Features are currently under development.*
-
-## 05. Technology Stack
-
-| Category | Technology |
-|---|---|
-| Frontend | React.js, Vite |
-| Backend | Node.js |
-| Styling | CSS |
-| Database | Supabase |
-| Authentication | Google OAuth, Microsoft OAuth |
-| Version Control | Git, GitHub |
-
-## 06. System Architecture
-
-The project follows a frontend-backend architecture.
-
-- **Frontend Layer:** User interfaces, marketplace components, dashboards and language support.
-- **Backend Layer:** Server-side routes, authentication services, middleware and application logic.
-- **Database Layer:** Data management and database integration.
-- **Authentication Layer:** Third-party authentication integrations.
-
-## 07. Project Structure
-
-```text
-AAROH-MARKETPLACE/
-│
-├── public/
-│   └── assets/
-│
-├── server/
-│   ├── database/
-│   ├── middleware/
-│   ├── migrations/
-│   ├── routes/
-│   └── services/
-│
-├── src/
-│   ├── components/
-│   ├── assets/
-│   ├── data/
-│   ├── locales/
-│   ├── services/
-│   └── styles/
-│
-├── package.json
-├── supabase_migration.sql
-└── vite.config.js
+# Start Vite frontend, Express backend, and Proxy gateway simultaneously
+node scripts/start-all.mjs
 ```
 
-## 08. Project Team & Contributions
-
-**Nishtha — Backend Development, System Integration & Project Design**
-- Backend architecture and development.
-- Database design and dataset integration.
-- Google and Microsoft authentication integration.
-- System functionality, security and application logic.
-- Project planning, technical decisions and overall integration.
-
-**Harshita — Frontend Development, UI/UX & Creative Ideation**
-- Frontend development and interface implementation.
-- UI/UX design and visual presentation.
-- Creative feature ideation and suggestions.
-- User experience improvements and design enhancements.
-- Contribution to the overall product concept and development.
-
-**Collaboration**
-
-Aaroh Marketplace is a collaborative project that combines technical development, creative thinking, and user-focused design to build a digital platform celebrating Indian craftsmanship.
-
-## 09. Future Scope
-
-- Enhanced artisan profiles and product management.
-- Improved marketplace functionality.
-- Additional regional language support.
-- Further authentication and security enhancements.
-- Expanded customer and artisan engagement features.
-
-## 10. Project Repository
-
-**GitHub:** [Aaroh Marketplace](https://github.com/Nishtha-projects/AAROH-MARKETPLACE-)
+The application is accessible at:
+- **Web Interface:** `http://localhost:5173` or `http://localhost:3000`
+- **Backend API:** `http://localhost:5000/api`
 
 ---
 
-## Copyright & Ownership
+## 03. Honest Feature & AI Audit Matrix
 
-© 2026 Aaroh Marketplace Project Team. All Rights Reserved.
+In accordance with Aaroh's ethical principles, every feature is transparently documented with its exact implementation tier:
 
-This project and its source code are the intellectual work of the project team.
-
-The repository is publicly available for viewing and academic evaluation. Public availability does not grant permission for unauthorized reproduction, redistribution, modification, or commercial reuse.
-
-For permissions, prior written consent from the project owner is required.
+| Capability | Tier | Backend Engine | Implementation Details |
+|---|---|---|---|
+| **Artisan Product CRUD** | **Full Production** | SQLite (`products` table) | Complete lifecycle: Create, Edit, Save Draft, Publish, Unpublish, and Delete with database persistence. |
+| **Craft Image Upload** | **Full Production** | Express (`/api/marketplace/upload-image`) | File-type validation (JPEG, PNG, WebP) and strict 5MB upload size limits with static hosting. |
+| **Customer Orders & Checkout** | **Full Production** | SQLite (`orders` table) | Persists orders with unique tracking codes (`AAROH-TRK-XXXXXX`) and transparent demo checkout disclaimers. |
+| **Custom Commissions** | **Full Production** | SQLite (`commissions` table) | Two-way commission escrow tracking with mandatory reference ownership verification and 3-way IP licensing. |
+| **Persistent User Preferences** | **Full Production** | SQLite (`user_settings` table) | Persists theme mode (light/dark), palette, reduced motion, and locale preferences for authenticated users. |
+| **Cloudflare Turnstile CAPTCHA** | **Full Production** | Cloudflare Verify API | Server-side cryptographic token verification on sign-in and sign-up with dev sandbox fallback. |
+| **Authentication & Roles** | **Full Production** | bcrypt + JWT + SQLite | Email/password, phone OTP, session restoration, and role protection (`artisan`, `customer`, `admin`). |
+| **Multilingual & RTL Support** | **Full Production** | Client i18n & CSS | 23 languages (English + all 22 official scheduled Indian languages) with automated RTL layout for Arabic & Urdu (`dir="rtl"`). |
+| **Voice-to-Text Listing** | **Prototype / Web Speech** | Browser Web Speech API | Client-side `webkitSpeechRecognition` + rule-based NLP extraction with **mandatory artisan review** before publishing. |
+| **Canvas Photo Enhancer** | **Prototype / Canvas** | HTML5 Canvas 2D | Contrast/white-balance adjustment with side-by-side comparison, original retention, and accept/revert buttons. |
+| **Craft Computer Vision** | **Prototype / Heuristic** | HTML5 Canvas Feature Vector | HSV histogram and Sobel edge-gradient feature extractor. Displays honest uncertainty warnings (<70%) with manual fallback. |
+| **Fair Wage Calculator** | **Deterministic Formula** | Arithmetic Cost Engine | Multi-factor benchmark (`Materials + (Labor Hours × Fair Wage) + Packaging & Courier + Heritage Band`). 100% artisan autonomy. |
+| **Aaroh Saathi Advisor** | **Rule-Based Assistant** | Knowledgebase Heuristic | Advisory responses based on National Crafts Council guidelines and Indian Geographical Indications (GI) regulations. |
+| **Google & Microsoft OAuth** | **Requires API Keys** | Passport OAuth2 | Live SSO when `GOOGLE_CLIENT_ID` and `MICROSOFT_CLIENT_ID` are configured; honest setup modal when keys are missing. |
+| **SMS OTP Delivery** | **Requires API Keys** | Twilio SMS API | Sends real SMS OTPs when Twilio keys are configured; restricted to development demo OTP (`OTP_DEMO_MODE=true`) in local dev. |
 
 ---
 
-### AAROH MARKETPLACE
-**Celebrating Heritage. Empowering Artisans.**
+## 04. Database Schema
+
+Aaroh uses an embedded SQLite database (`server/database/aaroh.db`) with zero external service requirements:
+
+- **`users`**: User credentials, role (`artisan`, `customer`, `admin`), phone/email, verification status.
+- **`products`**: Craft title, category, materials, dimensions, weight, price, status (`Published`, `Draft`, `Archived`), image URL, gallery, GI certification tag.
+- **`artisans`**: Master artisan bios, village location, experience years, GI badge verification, craft discipline.
+- **`orders`**: Order numbers, recipient information, items JSON, total amount, tracking code, fulfillment status (`Confirmed & Escrow Secured`, `In Production`, `Dispatched`, `Delivered`).
+- **`commissions`**: Custom project requests, dimensions, budget, reference image, `license_choice` (`personal_display`, `commercial_reproduction`, `portfolio_only`), `is_private`, artisan responses.
+- **`user_settings`**: `user_id`, `preferred_lang`, `theme_mode`, `palette`, `reduced_motion`, timestamp.
+- **`cultural_heritage`**: Peer-reviewed anthropological and GI registry records across traditional Indian crafts.
+
+---
+
+## 05. Security Practices
+
+- **Zero Plaintext Passwords:** All passwords hashed with `bcryptjs` (salt rounds: 10).
+- **Stateless Authentication:** Signed JSON Web Tokens (JWT) with configurable expiry.
+- **Upload Validation:** Strict 5MB file-size limit and MIME-type sniffing (JPEG, PNG, WebP only) before disk writes.
+- **No In-Memory Illusions:** All products, orders, and commissions persist across server restarts.
+- **Demo Mode Safety:** Demo OTPs (`123456`) are hardcoded to fail if `NODE_ENV === 'production'`.
+
+---
+
+## 06. License & Cultural Provenance
+
+Living craftsmanship documented within Aaroh remains the intellectual and cultural heritage of the respective artisan communities and traditional guilds across India. Software code is published under the MIT License.

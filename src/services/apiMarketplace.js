@@ -29,7 +29,7 @@ async function apiCall(endpoint, options = {}) {
 }
 
 // ============================================================================
-// 1. PRODUCTS
+// 1. PRODUCTS (CRUD & Status)
 // ============================================================================
 
 export async function fetchProducts(filters = {}) {
@@ -38,6 +38,7 @@ export async function fetchProducts(filters = {}) {
     if (filters.craftId && filters.craftId !== 'all') params.append('craftId', filters.craftId);
     if (filters.artisanId) params.append('artisanId', filters.artisanId);
     if (filters.search) params.append('search', filters.search);
+    if (filters.status) params.append('status', filters.status);
 
     const query = params.toString() ? `?${params.toString()}` : '';
     const res = await apiCall(`/api/marketplace/products${query}`);
@@ -47,6 +48,16 @@ export async function fetchProducts(filters = {}) {
     return MOCK_PRODUCTS;
   } catch {
     return MOCK_PRODUCTS;
+  }
+}
+
+export async function fetchProductById(id) {
+  try {
+    const res = await apiCall(`/api/marketplace/products/${id}`);
+    if (res.success && res.product) return res.product;
+    return null;
+  } catch {
+    return null;
   }
 }
 
@@ -67,8 +78,61 @@ export async function createProduct(productData) {
   }
 }
 
+export async function updateProduct(productId, updates) {
+  return await apiCall(`/api/marketplace/products/${productId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
+}
+
+export async function updateProductStatus(productId, status) {
+  return await apiCall(`/api/marketplace/products/${productId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
+  });
+}
+
+export async function deleteProduct(productId) {
+  return await apiCall(`/api/marketplace/products/${productId}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function uploadCraftImage(imageBase64, filename = 'craft.jpg') {
+  return await apiCall('/api/marketplace/upload-image', {
+    method: 'POST',
+    body: JSON.stringify({ imageBase64, filename })
+  });
+}
+
 // ============================================================================
-// 2. ORDERS & CHECKOUT PERSISTENCE
+// 2. ARTISANS API
+// ============================================================================
+
+export async function fetchArtisans() {
+  try {
+    const res = await apiCall('/api/marketplace/artisans');
+    if (res.success && res.artisans && res.artisans.length > 0) {
+      return res.artisans;
+    }
+    return MOCK_ARTISANS;
+  } catch {
+    return MOCK_ARTISANS;
+  }
+}
+
+export async function fetchArtisanById(id) {
+  try {
+    const res = await apiCall(`/api/marketplace/artisans/${id}`);
+    if (res.success && res.artisan) return res.artisan;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================================================
+// 3. ORDERS & CHECKOUT PERSISTENCE
 // ============================================================================
 
 export async function fetchCustomerOrders(customerEmail, customerId) {
@@ -103,16 +167,37 @@ export async function createOrder(orderPayload) {
         id: orderNumber,
         orderNumber,
         trackingCode: `AAROH-TRK-${Math.floor(100000 + Math.random() * 900000)}`,
-        status: 'Confirmed & Escrow Secured',
+        status: 'Order Request Placed (Demo Mode)',
         totalAmount: orderPayload.totalAmount
       }
     };
   }
 }
 
+export async function updateOrderStatus(orderId, status, notes = '') {
+  return await apiCall(`/api/marketplace/orders/${orderId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, notes })
+  });
+}
+
 // ============================================================================
-// 3. ENQUIRIES
+// 4. ENQUIRIES
 // ============================================================================
+
+export async function fetchEnquiries(artisanId, customerEmail) {
+  try {
+    const params = new URLSearchParams();
+    if (artisanId) params.append('artisanId', artisanId);
+    if (customerEmail) params.append('customerEmail', customerEmail);
+
+    const res = await apiCall(`/api/marketplace/enquiries?${params.toString()}`);
+    if (res.success && res.enquiries) return res.enquiries;
+    return MOCK_ENQUIRIES;
+  } catch {
+    return MOCK_ENQUIRIES;
+  }
+}
 
 export async function createEnquiry(enquiryPayload) {
   try {
@@ -131,8 +216,18 @@ export async function createEnquiry(enquiryPayload) {
 }
 
 // ============================================================================
-// 4. CUSTOM COMMISSIONS
+// 5. CUSTOM COMMISSIONS
 // ============================================================================
+
+export async function fetchCommissions() {
+  try {
+    const res = await apiCall('/api/marketplace/commissions');
+    if (res.success && res.commissions) return res.commissions;
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 export async function createCommission(commissionPayload) {
   try {
@@ -151,14 +246,61 @@ export async function createCommission(commissionPayload) {
         id: `COM-${Math.floor(1000 + Math.random() * 9000)}`,
         initialAdvance,
         status: 'Under Review by Artisan',
-        escrowStatus: `Advance Escrow Held (25% - ₹${initialAdvance.toLocaleString('en-IN')})`
+        escrowStatus: `Advance Escrow Held (25% - ₹${initialAdvance.toLocaleString('en-IN')})`,
+        licenseChoice: commissionPayload.licenseChoice || 'personal_display'
       }
     };
   }
 }
 
+export async function updateCommissionStatus(commissionId, status, artisanResponse, escrowStatus) {
+  return await apiCall(`/api/marketplace/commissions/${commissionId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status, artisanResponse, escrowStatus })
+  });
+}
+
 // ============================================================================
-// 5. AI FEATURES (Voice listing & Artisan Advisor Chatbot)
+// 6. USER SETTINGS (PERSISTENT THEME, LOCALE, PREFERENCES)
+// ============================================================================
+
+export async function getUserSettings(userId) {
+  try {
+    const res = await apiCall(`/api/marketplace/user-settings/${userId}`);
+    return res.settings;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveUserSettings(settings) {
+  try {
+    return await apiCall('/api/marketplace/user-settings', {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+  } catch (e) {
+    console.warn('[User Settings save failed]', e.message);
+    return { success: false };
+  }
+}
+
+// ============================================================================
+// 7. CULTURAL HERITAGE CRAFTS
+// ============================================================================
+
+export async function fetchCulturalCrafts() {
+  try {
+    const res = await apiCall('/api/marketplace/crafts');
+    if (res.success && res.crafts) return res.crafts;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+// ============================================================================
+// 8. AI FEATURES (Voice listing & Artisan Advisor Chatbot)
 // ============================================================================
 
 export async function callVoiceDraftAPI(transcript, language = 'hi', craftHint = '') {
@@ -170,7 +312,6 @@ export async function callVoiceDraftAPI(transcript, language = 'hi', craftHint =
     if (res.success && res.data) return res.data;
     throw new Error('Could not parse voice fields');
   } catch {
-    // Client-side fallback NLP
     return {
       title: "Handcrafted Heritage Creation",
       craftName: craftHint || "Madhubani Painting",

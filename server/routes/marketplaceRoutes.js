@@ -1,5 +1,11 @@
 import express from 'express';
 import { db } from '../database/db.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -224,6 +230,73 @@ router.delete('/products/:id', (req, res) => {
   }
 });
 
+// Update product status (Published, Draft, Archived)
+router.patch('/products/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!status || !['Published', 'Draft', 'Archived'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Valid status (Published, Draft, Archived) is required' });
+    }
+    const now = new Date().toISOString();
+    db.prepare('UPDATE products SET status = ?, updated_at = ? WHERE id = ?').run(status, now, id);
+    res.json({ success: true, message: `Product status updated to ${status}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Validated Image Upload Endpoint
+router.post('/upload-image', (req, res) => {
+  try {
+    const { imageBase64, filename = 'craft.jpg' } = req.body;
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      return res.status(400).json({ success: false, error: 'Image base64 data is required' });
+    }
+
+    if (imageBase64.startsWith('http://') || imageBase64.startsWith('https://') || imageBase64.startsWith('/')) {
+      return res.json({ success: true, url: imageBase64 });
+    }
+
+    // Validate size (max 5MB)
+    const approximateSizeInBytes = (imageBase64.length * 3) / 4;
+    if (approximateSizeInBytes > 5 * 1024 * 1024) {
+      return res.status(400).json({ success: false, error: 'File size exceeds maximum allowed limit of 5MB' });
+    }
+
+    // Validate MIME type
+    const mimeMatch = imageBase64.match(/^data:(image\/(jpeg|png|webp|gif));base64,/i);
+    let ext = 'jpg';
+    let base64Data = imageBase64;
+    if (mimeMatch) {
+      const mime = mimeMatch[1].toLowerCase();
+      if (mime === 'image/png') ext = 'png';
+      else if (mime === 'image/webp') ext = 'webp';
+      else if (mime === 'image/gif') ext = 'gif';
+      base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
+    }
+
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const safeFileName = `craft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const filePath = path.join(uploadsDir, safeFileName);
+    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+
+    res.json({
+      success: true,
+      message: 'Image uploaded and validated successfully',
+      url: `/uploads/${safeFileName}`,
+      filename: safeFileName,
+      sizeBytes: approximateSizeInBytes
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // ============================================================================
 // 2. ARTISANS API
 // ============================================================================
@@ -374,15 +447,31 @@ router.post('/orders', (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'Order placed and persisted successfully in Aaroh database',
+      message: 'Order request placed and persisted successfully in Aaroh database',
       order: {
         id: orderNumber,
         orderNumber,
         trackingCode,
         totalAmount,
-        status: 'Confirmed & Escrow Secured'
+        status: 'Order Request Placed (Demo Mode)'
       }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update order status (In Production, Dispatched, Delivered)
+router.put('/orders/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'Status is required' });
+    }
+    const now = new Date().toISOString();
+    db.prepare('UPDATE orders SET status = ?, notes = COALESCE(?, notes), updated_at = ? WHERE id = ?').run(status, notes || null, now, id);
+    res.json({ success: true, message: `Order status updated to ${status}` });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -507,6 +596,10 @@ router.get('/commissions', (req, res) => {
       status: r.status,
       escrowStatus: r.escrow_status,
       escrowAmount: r.escrow_amount,
+      licenseChoice: r.license_choice || 'personal_display',
+      usagePermission: Boolean(r.usage_permission !== 0),
+      isPrivate: Boolean(r.is_private !== 0),
+      artisanResponse: r.artisan_response || '',
       createdAt: r.created_at
     }));
     res.json({ success: true, count: commissions.length, commissions });
@@ -520,7 +613,8 @@ router.post('/commissions', (req, res) => {
     const {
       customerId, customerName, customerEmail, customerPhone,
       artisanId, artisanName, craftType, title, description,
-      budget, dimensions, timelineWeeks = 4, referenceImages
+      budget, dimensions, timelineWeeks = 4, referenceImages,
+      licenseChoice = 'personal_display', usagePermission = true, isPrivate = true
     } = req.body;
 
     if (!customerName || !customerEmail || !craftType || !description) {
@@ -537,8 +631,9 @@ router.post('/commissions', (req, res) => {
         id, customer_id, customer_name, customer_email, customer_phone,
         artisan_id, artisan_name, craft_type, title, description,
         budget, dimensions, timeline_weeks, reference_images,
-        status, escrow_status, escrow_amount, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        status, escrow_status, escrow_amount, license_choice,
+        usage_permission, is_private, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       customerId || 'patron',
@@ -557,6 +652,9 @@ router.post('/commissions', (req, res) => {
       'Under Review by Artisan',
       `Advance Escrow Held (25% - ₹${initialAdvance.toLocaleString('en-IN')})`,
       initialAdvance,
+      licenseChoice,
+      usagePermission ? 1 : 0,
+      isPrivate ? 1 : 0,
       now,
       now
     );
@@ -568,9 +666,79 @@ router.post('/commissions', (req, res) => {
         id,
         initialAdvance,
         status: 'Under Review by Artisan',
-        escrowStatus: `Advance Escrow Held (25% - ₹${initialAdvance.toLocaleString('en-IN')})`
+        escrowStatus: `Advance Escrow Held (25% - ₹${initialAdvance.toLocaleString('en-IN')})`,
+        licenseChoice
       }
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update commission status and artisan response
+router.put('/commissions/:id/status', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, artisanResponse, escrowStatus } = req.body;
+    if (!status) {
+      return res.status(400).json({ success: false, error: 'Status is required' });
+    }
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE commissions 
+      SET status = ?, 
+          artisan_response = COALESCE(?, artisan_response),
+          escrow_status = COALESCE(?, escrow_status),
+          updated_at = ? 
+      WHERE id = ?
+    `).run(status, artisanResponse || null, escrowStatus || null, now, id);
+    res.json({ success: true, message: `Commission status updated to ${status}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================================
+// 6. USER SETTINGS API (PERSISTED THEME, LOCALE, AND PREFERENCES)
+// ============================================================================
+
+router.get('/user-settings/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const row = db.prepare('SELECT * FROM user_settings WHERE user_id = ?').get(userId);
+    res.json({
+      success: true,
+      settings: row ? {
+        userId: row.user_id,
+        preferredLang: row.preferred_lang,
+        themeMode: row.theme_mode,
+        palette: row.palette,
+        reducedMotion: Boolean(row.reduced_motion)
+      } : null
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/user-settings', (req, res) => {
+  try {
+    const { userId, preferredLang, themeMode, palette, reducedMotion } = req.body;
+    if (!userId) {
+      return res.status(400).json({ success: false, error: 'userId is required' });
+    }
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO user_settings (user_id, preferred_lang, theme_mode, palette, reduced_motion, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        preferred_lang = excluded.preferred_lang,
+        theme_mode = excluded.theme_mode,
+        palette = excluded.palette,
+        reduced_motion = excluded.reduced_motion,
+        updated_at = excluded.updated_at
+    `).run(userId, preferredLang || 'en', themeMode || 'light', palette || 'ivory-indigo', reducedMotion ? 1 : 0, now);
+    res.json({ success: true, message: 'Settings saved to database' });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

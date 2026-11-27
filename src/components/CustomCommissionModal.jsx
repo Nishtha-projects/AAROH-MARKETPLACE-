@@ -14,9 +14,11 @@ export const CustomCommissionModal = ({
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
   const [commissionType, setCommissionType] = useState('physical'); // 'physical' | 'digital' | 'license'
+  const [licenseChoice, setLicenseChoice] = useState('personal_display'); // 'personal_display' | 'commercial_reproduction' | 'portfolio_only'
   const [imagePreview, setImagePreview] = useState(null);
   const [hasPermission, setHasPermission] = useState(false);
   const [rightsHolderModel, setRightsHolderModel] = useState('creator-collaborative');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: 'Custom Ancestral Motif Commission',
     craftStyle: product ? product.craftName : 'Madhubani (Mithila) Painting',
@@ -38,30 +40,65 @@ export const CustomCommissionModal = ({
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!hasPermission) {
       alert("Please confirm you have permission to use the reference image.");
       return;
     }
 
-    const commissionRecord = {
-      id: `COM-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().split('T')[0],
+    setIsSubmitting(true);
+    const budgetVal = Number(formData.estimatedBudget) || 9500;
+
+    const payload = {
+      customerName: "Aditi Narang (Patron)",
+      customerEmail: "aditi.n@example.com",
+      customerPhone: "+91 98450 12345",
+      craftType: formData.craftStyle,
       title: formData.title,
-      craftStyle: formData.craftStyle,
       description: formData.description,
-      commissionType,
-      rightsModel: rightsHolderModel,
-      budget: Number(formData.estimatedBudget),
-      deadline: `${formData.deadlineWeeks} weeks`,
-      status: 'Pending Artisan Review',
-      hasImage: !!imagePreview,
-      permissionConfirmed: true
+      budget: budgetVal,
+      dimensions: formData.dimensions,
+      timelineWeeks: Number(formData.deadlineWeeks) || 4,
+      referenceImages: imagePreview ? [imagePreview] : [],
+      licenseChoice,
+      usagePermission: hasPermission,
+      isPrivate: true
     };
 
-    setSubmitted(true);
-    onCommissionSubmitted(commissionRecord);
+    try {
+      const res = await createCommission(payload);
+      const savedComm = res?.commission || {
+        id: `COM-${Math.floor(1000 + Math.random() * 9000)}`,
+        initialAdvance: Math.round(budgetVal * 0.25),
+        status: 'Under Review by Artisan',
+        escrowStatus: `Advance Escrow Held (25% - ₹${Math.round(budgetVal * 0.25).toLocaleString('en-IN')})`,
+        licenseChoice
+      };
+
+      const finalRecord = {
+        id: savedComm.id,
+        date: new Date().toISOString().split('T')[0],
+        title: formData.title,
+        craftStyle: formData.craftStyle,
+        description: formData.description,
+        commissionType,
+        licenseChoice,
+        budget: budgetVal,
+        deadline: `${formData.deadlineWeeks} weeks`,
+        status: savedComm.status || 'Under Review by Artisan',
+        escrowStatus: savedComm.escrowStatus,
+        hasImage: !!imagePreview,
+        permissionConfirmed: true
+      };
+
+      setSubmitted(true);
+      onCommissionSubmitted(finalRecord);
+    } catch (err) {
+      console.warn("Commission submit notice:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -81,7 +118,7 @@ export const CustomCommissionModal = ({
             </span>
             <h3 style={{ fontSize: '1.4rem' }}>{t.custom_commission_title || "Commission Custom Heritage Art"}</h3>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">✕</button>
         </div>
 
         <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
@@ -223,6 +260,74 @@ export const CustomCommissionModal = ({
                       <strong>Copyright & Rights Confirmation:</strong> I confirm that I own the rights to this image or hold verified legal permission to use it as a reference for this custom artisan commission.
                     </span>
                   </label>
+                </div>
+              </div>
+
+              {/* Explicit IP & Licensing Model Selection */}
+              <div style={{
+                backgroundColor: 'var(--bg-surface-subtle)',
+                borderRadius: 'var(--radius-md)',
+                padding: '20px',
+                border: '1px solid var(--border-subtle)',
+                marginBottom: '24px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: 'var(--accent-indigo)', fontWeight: 600 }}>
+                  <ShieldCheck size={18} />
+                  <span>3. Select Intellectual Property & Usage License</span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                  Aaroh requires explicit licensing clarity so artisans and creators mutually understand how this custom work may be used:
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {[
+                    {
+                      id: 'personal_display',
+                      title: 'Personal Display Only (Non-commercial)',
+                      desc: 'Piece is commissioned strictly for private home or office display. Artisan guild retains lineage motif rights.'
+                    },
+                    {
+                      id: 'commercial_reproduction',
+                      title: 'Commercial Reproduction & Merchandising',
+                      desc: 'Extended manufacturing rights. Requires 10% royalty escrow distribution to the crafting artisan guild.'
+                    },
+                    {
+                      id: 'portfolio_only',
+                      title: 'Artisan Portfolio & Exhibition Rights',
+                      desc: 'Artisan and commissioner mutually agree to display digital photography in curated heritage archives.'
+                    }
+                  ].map((lic) => (
+                    <label
+                      key={lic.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        padding: '12px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: licenseChoice === lic.id ? '2px solid var(--accent-indigo)' : '1px solid var(--border-subtle)',
+                        backgroundColor: licenseChoice === lic.id ? 'var(--bg-surface)' : 'transparent',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="licenseChoice"
+                        value={lic.id}
+                        checked={licenseChoice === lic.id}
+                        onChange={() => setLicenseChoice(lic.id)}
+                        style={{ marginTop: '3px' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                          {lic.title}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {lic.desc}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
                 </div>
               </div>
 

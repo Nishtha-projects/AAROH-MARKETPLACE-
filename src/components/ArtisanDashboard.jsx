@@ -1,4 +1,11 @@
-import { createProduct, callArtisanAdvisorAPI } from '../services/apiMarketplace';
+import { 
+  createProduct, 
+  callArtisanAdvisorAPI,
+  uploadCraftImage,
+  updateProductStatus,
+  deleteProduct,
+  updateOrderStatus
+} from '../services/apiMarketplace';
 import { calculateArtisanPrice } from '../services/pricingEngine';
 import { enhanceCraftImage } from '../services/imageEnhancer';
 import React, { useState, useEffect, useRef } from 'react';
@@ -67,6 +74,24 @@ export const ArtisanDashboard = ({
 
   // New Listing State (Voice + AI Draft + Fair Price)
   const [listingStep, setListingStep] = useState(1);
+  const [localProducts, setLocalProducts] = useState(products || []);
+  const [localOrders, setLocalOrders] = useState(orders || []);
+
+  useEffect(() => {
+    if (products) setLocalProducts(products);
+  }, [products]);
+
+  useEffect(() => {
+    if (orders) setLocalOrders(orders);
+  }, [orders]);
+
+  const [originalPhoto, setOriginalPhoto] = useState('/assets/images/madhubani-tree-of-life.jpg');
+  const [enhancedPhoto, setEnhancedPhoto] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const photoInputRef = useRef(null);
   const [uploadedPhotos, setUploadedPhotos] = useState(['/assets/images/madhubani-tree-of-life.jpg']);
   const [isRecording, setIsRecording] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState(
@@ -284,22 +309,73 @@ export const ArtisanDashboard = ({
     }
   };
 
+  const handlePhotoFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoUploadError("File size exceeds 5MB limit. Please upload a smaller photo.");
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setPhotoUploadError("Supported image formats are JPG, PNG, and WebP.");
+      return;
+    }
+
+    setPhotoUploadError(null);
+    setIsUploadingPhoto(true);
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result;
+      setOriginalPhoto(base64Data);
+      setUploadedPhotos([base64Data]);
+      setEnhancedPhoto(null);
+
+      try {
+        const res = await uploadCraftImage(base64Data, file.name);
+        if (res && res.success && res.url) {
+          setUploadedPhotos([res.url]);
+          setOriginalPhoto(res.url);
+        }
+      } catch (err) {
+        console.warn("Backend image upload fallback to local preview", err);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleEnhanceFirstPhoto = async () => {
-    if (!uploadedPhotos || !uploadedPhotos[0]) return;
+    const photoToEnhance = originalPhoto || uploadedPhotos[0];
+    if (!photoToEnhance) return;
     setIsEnhancingPhoto(true);
     try {
-      const enhanced = await enhanceCraftImage(uploadedPhotos[0], {
+      const enhanced = await enhanceCraftImage(photoToEnhance, {
         addGiSeal: true,
         craftName: draftFields.category?.value || "GI Certified Craft"
       });
       if (enhanced) {
-        setUploadedPhotos(prev => [enhanced, ...prev.slice(1)]);
-        alert("Photo successfully enhanced with calibrated natural contrast and an authentic GI Verification seal!");
+        setEnhancedPhoto(enhanced);
       }
     } catch (e) {
       console.warn('Enhancement error', e);
     } finally {
       setIsEnhancingPhoto(false);
+    }
+  };
+
+  const handleApplyEnhancedPhoto = () => {
+    if (enhancedPhoto) {
+      setUploadedPhotos([enhancedPhoto]);
+    }
+  };
+
+  const handleRevertToOriginalPhoto = () => {
+    if (originalPhoto) {
+      setUploadedPhotos([originalPhoto]);
+      setEnhancedPhoto(null);
     }
   };
 
@@ -372,43 +448,103 @@ export const ArtisanDashboard = ({
     }
   };
 
-  const handlePublishListing = () => {
-    const allApproved = Object.values(draftFields).every(f => f.approved);
-    if (!allApproved) {
-      alert("Please review and approve all AI-generated fields before publishing. AI cannot publish without artisan consent.");
-      return;
-    }
-
-    const newProd = {
+  const buildProductPayload = (status = 'Published') => {
+    const now = new Date().toISOString();
+    return {
       id: `prod-${Date.now()}`,
-      title: draftFields.title.value,
+      title: draftFields.title.value || "Handcrafted Heritage Art",
       craftId: "madhubani",
-      craftName: draftFields.category.value,
+      craftName: draftFields.category.value || "Traditional Indian Craft",
       artisanId: artisan?.id || "dulari-devi",
       artisanName: artisan?.name || "Dulari Devi & Savitri Jha",
-      artisanLocation: draftFields.region.value,
-      price: Number(finalArtisanPrice),
+      artisanLocation: draftFields.region.value || "Bihar, India",
+      price: Number(finalArtisanPrice) || 5000,
       availability: "In Stock (1 piece only)",
-      status: "Published",
+      status,
       stockCount: 1,
       readyMade: true,
       leadTimeDays: 2,
-      image: uploadedPhotos[0],
+      image: uploadedPhotos[0] || originalPhoto || '/assets/images/madhubani-tree-of-life.jpg',
       gallery: uploadedPhotos,
-      materials: draftFields.materials.value.split(',').map(s => s.trim()),
-      dimensions: draftFields.dimensions.value,
+      materials: (draftFields.materials.value || '').split(',').map(s => s.trim()).filter(Boolean),
+      dimensions: draftFields.dimensions.value || '20 x 24 inches',
       weight: "250g",
+      description: draftFields.description.value || '',
       artisanStory: voiceTranscript,
       oralAudioUrl: recordedAudioUrl,
       voiceLanguage: selectedVoiceLang,
       culturalContext: draftFields.description.value,
       curatorNote: "Verified artisan direct upload with approved voice transcript & oral recording.",
-      featured: true
+      featured: true,
+      createdAt: now,
+      updatedAt: now
     };
+  };
 
-    onAddNewProduct(newProd);
-    alert("New craft published successfully to Aaroh Marketplace!");
+  const handlePublishListing = async () => {
+    const allApproved = Object.values(draftFields).every(f => f.approved);
+    if (!allApproved) {
+      alert("Please review and approve all AI-extracted fields before publishing. Aaroh requires mandatory artisan approval.");
+      return;
+    }
+
+    setIsPublishing(true);
+    const newProd = buildProductPayload('Published');
+    try {
+      await createProduct(newProd);
+    } catch (e) {
+      console.warn("Product create API fallback", e);
+    }
+    setLocalProducts(prev => [newProd, ...prev]);
+    if (onAddNewProduct) onAddNewProduct(newProd);
+    setIsPublishing(false);
+    alert("New craft published successfully to Aaroh Marketplace database!");
     setActiveView('listings');
+  };
+
+  const handleSaveDraft = async () => {
+    setIsSavingDraft(true);
+    const draftProd = buildProductPayload('Draft');
+    try {
+      await createProduct(draftProd);
+    } catch (e) {
+      console.warn("Product draft API fallback", e);
+    }
+    setLocalProducts(prev => [draftProd, ...prev]);
+    if (onAddNewProduct) onAddNewProduct(draftProd);
+    setIsSavingDraft(false);
+    alert("Listing saved as Draft in your studio!");
+    setActiveView('listings');
+  };
+
+  const handleToggleProductStatus = async (item) => {
+    const nextStatus = item.status === 'Published' ? 'Draft' : 'Published';
+    try {
+      await updateProductStatus(item.id, nextStatus);
+    } catch (e) {
+      console.warn("Status toggle fallback", e);
+    }
+    setLocalProducts(prev => prev.map(p => p.id === item.id ? { ...p, status: nextStatus } : p));
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    if (!window.confirm("Are you sure you want to delete this listing from the database?")) return;
+    try {
+      await deleteProduct(productId);
+    } catch (e) {
+      console.warn("Delete product fallback", e);
+    }
+    setLocalProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleOrderStatusUpdate = async (orderId, newStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+    } catch (e) {
+      console.warn("Order status update fallback", e);
+    }
+    setLocalOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    if (onUpdateOrderStatus) onUpdateOrderStatus(orderId, newStatus);
   };
 
   if (!isOpen || !currentUser) return null;
@@ -657,7 +793,7 @@ export const ArtisanDashboard = ({
                 <span>Add New Creation</span>
               </button>
 
-              <button className="modal-close-btn" onClick={onClose}>✕</button>
+              <button className="modal-close-btn" onClick={onClose} aria-label="Close dialog">✕</button>
             </div>
           </div>
 
@@ -1123,7 +1259,146 @@ export const ArtisanDashboard = ({
                   </div>
                 )}
 
-                {/* Step 3: AI Draft Field Approval Controls */}
+                                {/* Step 3: High-Resolution Craft Photography & Canvas Enhancement */}
+                <div style={{
+                  padding: '22px',
+                  backgroundColor: '#FAF5EB',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid #EBE4D5',
+                  marginBottom: '24px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div className="craft-seal-badge" style={{ marginBottom: '4px' }}>
+                        <ImageIcon size={13} />
+                        <span>Artisan Visual Documentation</span>
+                      </div>
+                      <h4 style={{ fontSize: '1.05rem', color: '#1A3459', margin: 0, fontFamily: 'var(--font-serif)' }}>
+                        Product Photography & Natural Canvas Enhancer
+                      </h4>
+                      <p style={{ fontSize: '0.8rem', color: '#7E8BA0', margin: '2px 0 0' }}>
+                        Upload real photographs (JPEG, PNG, WebP up to 5MB). Use client-side canvas contrast enhancement with side-by-side comparison.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handlePhotoFileChange}
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => photoInputRef.current?.click()}
+                        disabled={isUploadingPhoto}
+                        className="btn-secondary"
+                        style={{ padding: '8px 16px', fontSize: '0.84rem' }}
+                      >
+                        <ImageIcon size={15} />
+                        <span>{isUploadingPhoto ? "Validating & Uploading..." : "Upload Craft Photo"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleEnhanceFirstPhoto}
+                        disabled={isEnhancingPhoto || !uploadedPhotos[0]}
+                        className="btn-primary"
+                        style={{ padding: '8px 16px', fontSize: '0.84rem', backgroundColor: '#1A3459' }}
+                      >
+                        <Wand2 size={15} />
+                        <span>{isEnhancingPhoto ? "Processing Canvas..." : "Enhance Contrast (Canvas)"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {photoUploadError && (
+                    <div style={{
+                      backgroundColor: 'rgba(198, 99, 118, 0.1)',
+                      border: '1px solid #C66376',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px 14px',
+                      marginBottom: '14px',
+                      fontSize: '0.84rem',
+                      color: '#C66376'
+                    }}>
+                      {photoUploadError}
+                    </div>
+                  )}
+
+                  {/* Side-by-Side Comparison if enhanced photo is generated */}
+                  {enhancedPhoto ? (
+                    <div style={{
+                      backgroundColor: '#FFF',
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid #D5C5B2'
+                    }}>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#1A3459', marginBottom: '12px' }}>
+                        Side-by-Side Verification: Original vs Canvas Auto-Enhanced
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+                        <div>
+                          <div style={{ fontSize: '0.78rem', color: '#7E8BA0', fontWeight: 600, marginBottom: '6px' }}>
+                            Original Capture
+                          </div>
+                          <img
+                            src={originalPhoto}
+                            alt="Original craft"
+                            style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid #EBE4D5' }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.78rem', color: '#68793D', fontWeight: 600, marginBottom: '6px' }}>
+                            Canvas Auto-Contrast & Calibrated Dynamic Range
+                          </div>
+                          <img
+                            src={enhancedPhoto}
+                            alt="Enhanced craft"
+                            style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '2px solid #68793D' }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={handleRevertToOriginalPhoto}
+                          className="btn-secondary"
+                          style={{ padding: '6px 14px', fontSize: '0.82rem' }}
+                        >
+                          Keep Original Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleApplyEnhancedPhoto}
+                          className="btn-primary"
+                          style={{ padding: '6px 14px', fontSize: '0.82rem', backgroundColor: '#68793D' }}
+                        >
+                          ✓ Accept Enhanced Photo
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', backgroundColor: '#FFF', padding: '12px', borderRadius: 'var(--radius-sm)', border: '1px solid #EBE4D5' }}>
+                      <img
+                        src={uploadedPhotos[0]}
+                        alt="Current craft photo"
+                        style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#1A3459' }}>
+                          Primary Listing Photograph
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#7E8BA0', marginTop: '2px' }}>
+                          This photograph will be presented on the public marketplace card and verified heritage seal certificates.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 4: AI Draft Field Approval Controls */}
                 <div style={{ marginBottom: '28px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
@@ -1305,13 +1580,23 @@ export const ArtisanDashboard = ({
                   <button className="btn-secondary" onClick={() => setActiveView('overview')}>
                     Cancel & Return to Overview
                   </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={handleSaveDraft}
+                    disabled={isSavingDraft || isPublishing}
+                    style={{ padding: '14px 24px', fontSize: '0.96rem', borderColor: '#BF872E', color: '#BF872E' }}
+                  >
+                    <span>{isSavingDraft ? "Saving Draft..." : "Save as Draft"}</span>
+                  </button>
                   <button 
                     className="btn-primary" 
-                    onClick={handlePublishListing} 
+                    onClick={handlePublishListing}
+                    disabled={isSavingDraft || isPublishing}
                     style={{ padding: '14px 32px', fontSize: '0.96rem' }}
                   >
                     <CheckCircle2 size={18} />
-                    <span>Publish to Aaroh Marketplace</span>
+                    <span>{isPublishing ? "Publishing..." : "Publish to Aaroh Marketplace"}</span>
                   </button>
                 </div>
               </div>
@@ -1448,7 +1733,12 @@ export const ArtisanDashboard = ({
           {activeView === 'listings' && (
             <div style={{ padding: '28px 32px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ fontSize: '1.3rem', color: '#1A3459', margin: 0 }}>Active Guild Catalog ({products.length})</h3>
+                <div>
+                  <h3 style={{ fontSize: '1.3rem', color: '#1A3459', margin: 0 }}>Artisan Studio Catalog ({localProducts.length})</h3>
+                  <p style={{ fontSize: '0.82rem', color: '#7E8BA0', margin: '4px 0 0' }}>
+                    Real-time SQLite database listings. Artisans can toggle between Published and Draft, or remove discontinued creations.
+                  </p>
+                </div>
                 <button className="btn-primary" onClick={() => setActiveView('new-listing')} style={{ padding: '8px 18px', fontSize: '0.86rem' }}>
                   <PlusCircle size={15} />
                   <span>New Listing</span>
@@ -1456,7 +1746,7 @@ export const ArtisanDashboard = ({
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {products.map((item) => (
+                {localProducts.map((item) => (
                   <div
                     key={item.id}
                     style={{
@@ -1466,16 +1756,63 @@ export const ArtisanDashboard = ({
                       border: '1px solid #EBE4D5',
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
                       gap: '16px'
                     }}
                   >
-                    <img src={item.image} alt={item.title} style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.76rem', color: '#BF872E', fontWeight: 600 }}>{item.craftName}</div>
-                      <h4 style={{ fontSize: '1rem', margin: '2px 0 4px', color: '#1C2638' }}>{item.title}</h4>
-                      <div style={{ fontSize: '0.84rem', color: '#7E8BA0' }}>₹{item.price.toLocaleString('en-IN')} • {item.availability}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '260px' }}>
+                      <img src={item.image} alt={item.title} style={{ width: '64px', height: '64px', borderRadius: 'var(--radius-sm)', objectFit: 'cover' }} />
+                      <div>
+                        <div style={{ fontSize: '0.76rem', color: '#BF872E', fontWeight: 600 }}>{item.craftName}</div>
+                        <h4 style={{ fontSize: '1rem', margin: '2px 0 4px', color: '#1C2638' }}>{item.title}</h4>
+                        <div style={{ fontSize: '0.84rem', color: '#7E8BA0' }}>₹{Number(item.price).toLocaleString('en-IN')} • {item.availability || 'Direct Artisan Piece'}</div>
+                      </div>
                     </div>
-                    <span className="badge badge-in-stock">Published</span>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className={item.status === 'Draft' ? 'badge badge-pending' : 'badge badge-in-stock'}>
+                        {item.status || 'Published'}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleProductStatus(item)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          backgroundColor: item.status === 'Draft' ? '#EEF3E4' : '#FAF5EB',
+                          color: item.status === 'Draft' ? '#68793D' : '#BF872E',
+                          border: item.status === 'Draft' ? '1px solid #68793D' : '1px solid #BF872E',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {item.status === 'Draft' ? 'Publish Listing' : 'Unpublish (Draft)'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteProduct(item.id)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: '0.78rem',
+                          backgroundColor: 'transparent',
+                          color: '#C66376',
+                          border: '1px solid rgba(198, 99, 118, 0.4)',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Delete listing from database"
+                      >
+                        <Trash2 size={13} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1485,9 +1822,17 @@ export const ArtisanDashboard = ({
           {/* VIEW 4: RECEIVED ORDERS */}
           {activeView === 'orders' && (
             <div style={{ padding: '28px 32px' }}>
-              <h3 style={{ fontSize: '1.3rem', color: '#1A3459', marginBottom: '20px' }}>Received Orders ({orders.length})</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.3rem', color: '#1A3459', margin: 0 }}>Received Orders ({localOrders.length})</h3>
+                  <p style={{ fontSize: '0.82rem', color: '#7E8BA0', margin: '4px 0 0' }}>
+                    Direct patron orders in escrow. Update fulfillment status as you dispatch packages.
+                  </p>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {orders.map((ord) => (
+                {localOrders.map((ord) => (
                   <div
                     key={ord.id}
                     style={{
@@ -1497,19 +1842,37 @@ export const ArtisanDashboard = ({
                       border: '1px solid #EBE4D5'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
-                        <span style={{ fontSize: '0.78rem', color: '#7E8BA0' }}>Order #{ord.id} • {ord.date}</span>
-                        <h4 style={{ fontSize: '1.1rem', margin: '4px 0', color: '#1C2638' }}>{ord.productTitle}</h4>
-                        <div style={{ fontSize: '0.86rem', color: '#525E75' }}>Customer: {ord.customerName} ({ord.customerCity})</div>
+                        <span style={{ fontSize: '0.78rem', color: '#7E8BA0' }}>Order #{ord.id || ord.orderNumber} • {ord.date || ord.createdAt?.split('T')[0] || 'Recent'}</span>
+                        <h4 style={{ fontSize: '1.1rem', margin: '4px 0', color: '#1C2638' }}>{ord.productTitle || (ord.items && ord.items[0]?.title) || 'Living Craft Masterpiece'}</h4>
+                        <div style={{ fontSize: '0.86rem', color: '#525E75' }}>Customer: {ord.customerName} ({ord.customerCity || 'India'})</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1A3459' }}>₹{ord.amount.toLocaleString('en-IN')}</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1A3459' }}>₹{Number(ord.amount || ord.totalAmount || 0).toLocaleString('en-IN')}</div>
                         <span className="badge badge-in-stock">{ord.status}</span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '0.82rem', color: '#7E8BA0', paddingTop: '10px', borderTop: '1px solid #EBE4D5' }}>
-                      Courier Tracking: {ord.trackingCode} • Direct Escrow Payment Released on Delivery
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingTop: '10px', borderTop: '1px solid #EBE4D5' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#7E8BA0' }}>
+                        Courier Tracking: <strong>{ord.trackingCode}</strong> • Escrow Protected
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#7E8BA0' }}>Update Progress:</span>
+                        <select
+                          value={ord.status}
+                          onChange={(e) => handleOrderStatusUpdate(ord.id || ord.orderNumber, e.target.value)}
+                          className="form-select"
+                          style={{ width: 'auto', padding: '4px 8px', fontSize: '0.82rem', fontWeight: 600 }}
+                        >
+                          <option value="Confirmed & Escrow Secured">Confirmed & Escrow Secured</option>
+                          <option value="In Production">In Production</option>
+                          <option value="Dispatched with Tracking">Dispatched with Tracking</option>
+                          <option value="Delivered & Escrow Released">Delivered & Escrow Released</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))}

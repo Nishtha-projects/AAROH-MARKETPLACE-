@@ -242,9 +242,44 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT PRIMARY KEY,
+    preferred_lang TEXT DEFAULT 'en',
+    theme_mode TEXT DEFAULT 'light',
+    palette TEXT DEFAULT 'ivory-indigo',
+    reduced_motion INTEGER DEFAULT 0,
+    updated_at TEXT NOT NULL
+  );
+
 `);
 
 // Run migrations for existing database columns and nullability
+try {
+  const commCols = db.prepare('PRAGMA table_info(commissions)').all().map(c => c.name);
+  if (!commCols.includes('license_choice')) {
+    db.exec("ALTER TABLE commissions ADD COLUMN license_choice TEXT DEFAULT 'personal_display';");
+  }
+  if (!commCols.includes('usage_permission')) {
+    db.exec("ALTER TABLE commissions ADD COLUMN usage_permission INTEGER DEFAULT 1;");
+  }
+  if (!commCols.includes('is_private')) {
+    db.exec("ALTER TABLE commissions ADD COLUMN is_private INTEGER DEFAULT 1;");
+  }
+  if (!commCols.includes('artisan_response')) {
+    db.exec("ALTER TABLE commissions ADD COLUMN artisan_response TEXT DEFAULT '';");
+  }
+} catch (e) {
+  console.warn('[DB Migration notice: commissions]', e.message);
+}
+
+try {
+  const orderCols = db.prepare('PRAGMA table_info(orders)').all().map(c => c.name);
+  if (!orderCols.includes('payment_status')) {
+    db.exec("ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'Demo Order - Payment Not Collected';");
+  }
+} catch (e) {
+  console.warn('[DB Migration notice: orders]', e.message);
+}
 try {
   const userColumns = db.prepare('PRAGMA table_info(users)').all();
   const emailCol = userColumns.find(col => col.name === 'email');

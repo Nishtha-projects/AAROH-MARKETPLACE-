@@ -1,4 +1,10 @@
-import { fetchProducts, fetchCustomerOrders } from './services/apiMarketplace';
+import { 
+  fetchProducts, 
+  fetchCustomerOrders, 
+  fetchEnquiries, 
+  getUserSettings, 
+  saveUserSettings 
+} from './services/apiMarketplace';
 import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { OpeningCoverSection } from './components/OpeningCoverSection';
@@ -56,9 +62,22 @@ export function App() {
   const [products, setProducts] = useState(MOCK_PRODUCTS);
   const [orders, setOrders] = useState(MOCK_ORDERS);
   const [enquiries, setEnquiries] = useState(MOCK_ENQUIRIES);
-  const [cartItems, setCartItems] = useState([
-    { ...MOCK_PRODUCTS[0], quantity: 1 }
-  ]);
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem('aaroh_cart');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('aaroh_cart', JSON.stringify(cartItems));
+    } catch {}
+  }, [cartItems]);
 
   // Auth & User State
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
@@ -198,8 +217,38 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('lang', lang);
+    document.documentElement.setAttribute('dir', (lang === 'ar' || lang === 'ur') ? 'rtl' : 'ltr');
     localStorage.setItem('aaroh_lang', lang);
   }, [lang]);
+
+  // Persist user settings to SQLite database if user is logged in
+  useEffect(() => {
+    const userId = currentUser?.id || currentUser?.userId;
+    if (userId) {
+      saveUserSettings({
+        userId,
+        preferredLang: lang,
+        themeMode,
+        palette,
+        reducedMotion
+      });
+    }
+  }, [lang, themeMode, palette, reducedMotion, currentUser]);
+
+  // Load user settings on login
+  useEffect(() => {
+    const userId = currentUser?.id || currentUser?.userId;
+    if (userId) {
+      getUserSettings(userId).then(settings => {
+        if (settings) {
+          if (settings.preferredLang) setLang(settings.preferredLang);
+          if (settings.themeMode) setThemeMode(settings.themeMode);
+          if (settings.palette) setPalette(settings.palette);
+          if (typeof settings.reducedMotion === 'boolean') setReducedMotion(settings.reducedMotion);
+        }
+      });
+    }
+  }, [currentUser?.id, currentUser?.userId]);
 
 
 
@@ -232,6 +281,9 @@ export function App() {
   const handleOrderCompleted = (newOrder) => {
     setOrders((prev) => [newOrder, ...prev]);
     setCartItems([]);
+    try {
+      localStorage.removeItem('aaroh_cart');
+    } catch {}
     setIsCheckoutOpen(false);
   };
 
