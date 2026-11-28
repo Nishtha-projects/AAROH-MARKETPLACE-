@@ -56,7 +56,7 @@ const CRAFT_METADATA = {
 
 export const PaintingDatasetModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('recognition');
-  const [selectedSample, setSelectedSample] = useState('/uploads/crafts/Madhubani/wiki_0.jpg');
+  const [selectedSample, setSelectedSample] = useState('/uploads/crafts/Madhubani/ddg_0.jpg');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState({
     artForm: "Madhubani (Mithila) Painting",
@@ -73,10 +73,10 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
   const fileInputRef = useRef(null);
 
   const sampleImages = [
-    { url: '/uploads/crafts/Madhubani/wiki_0.jpg', name: 'Madhubani (Bihar)' },
-    { url: '/uploads/crafts/Jaipur_Blue_Pottery/wiki_0.jpg', name: 'Blue Pottery (Rajasthan)' },
-    { url: '/uploads/crafts/Kutch_Rogan/wiki_0.jpg', name: 'Kutch Rogan (Gujarat)' },
-    { url: '/uploads/crafts/Bastar_Dokra/wiki_0.jpg', name: 'Bastar Dokra (CG)' }
+    { url: '/uploads/crafts/Madhubani/ddg_0.jpg', name: 'Madhubani (Bihar)' },
+    { url: '/uploads/crafts/Jaipur_Blue_Pottery/ddg_0.jpg', name: 'Blue Pottery (Rajasthan)' },
+    { url: '/uploads/crafts/Kutch_Rogan/ddg_0.jpg', name: 'Kutch Rogan (Gujarat)' },
+    { url: '/uploads/crafts/Bastar_Dokra/ddg_0.jpg', name: 'Bastar Dokra (CG)' }
   ];
 
   const runRealModelInference = async (imgEl) => {
