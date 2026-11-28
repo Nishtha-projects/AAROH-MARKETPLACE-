@@ -59,10 +59,7 @@ export const ExploreAarohSection = ({
       }
 
       if (selectedCategory !== 'All') {
-        if (selectedCategory === 'Painting' && !product.craftName.toLowerCase().includes('painting')) return false;
-        if (selectedCategory === 'Pottery' && !product.craftName.toLowerCase().includes('pottery')) return false;
-        if (selectedCategory === 'Metalcraft' && !product.craftName.toLowerCase().includes('metal')) return false;
-        if (selectedCategory === 'Handloom & Textiles' && !product.craftName.toLowerCase().includes('rogan') && !product.craftName.toLowerCase().includes('textile')) return false;
+        if (product.category !== selectedCategory) return false;
       }
 
       if (selectedRegion !== 'All') {
