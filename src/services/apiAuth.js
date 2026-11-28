@@ -37,6 +37,15 @@ export const storeSession = (token, user) => {
   notifyListeners(user);
 };
 
+const clearSession = () => {
+  try {
+    localStorage.removeItem(CACHED_USER_KEY);
+    localStorage.removeItem('aaroh_jwt_token');
+    localStorage.removeItem('aaroh_authenticated_user');
+  } catch {}
+  notifyListeners(null);
+};
+
 export const getStoredToken = () => {
   try {
     // Token is stored as a plain string (not JSON)
@@ -45,13 +54,6 @@ export const getStoredToken = () => {
     console.warn('[apiAuth] Failed to read stored token:', e);
     return null;
   }
-}; {
-  try {
-    localStorage.removeItem(CACHED_USER_KEY);
-    localStorage.removeItem('aaroh_jwt_token');
-    localStorage.removeItem('aaroh_authenticated_user');
-  } catch {}
-  notifyListeners(null);
 };
 
 export const subscribeToAuthService = (callback) => {
