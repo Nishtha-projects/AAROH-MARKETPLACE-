@@ -189,7 +189,7 @@ export const ExploreAarohSection = ({
         {/* Step 4: Selected Products Grid on Calm Backgrounds */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '28px',
           marginBottom: '64px'
         }}>
@@ -305,7 +305,7 @@ export const ExploreAarohSection = ({
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {CULTURAL_JOURNAL_STORIES.map((story) => (
               <div 
                 key={story.id}
@@ -379,7 +379,7 @@ export const ExploreAarohSection = ({
         {/* Step 6: Clear Action Banners for Joining / Selling */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '24px'
         }}>
           {/* Sell with Aaroh Card */}
