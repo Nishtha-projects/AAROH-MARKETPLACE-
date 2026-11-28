@@ -1,85 +1,131 @@
-import React, { useState } from 'react';
-import { Compass, Sparkles, ShieldCheck, CheckCircle2, AlertCircle, Upload, BookOpen, Layers } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Compass, Sparkles, ShieldCheck, CheckCircle2, AlertTriangle, Upload, BookOpen } from 'lucide-react';
 import { MOCK_CRAFTS } from '../data/mockData';
+import { predictCraftFromImage } from '../services/artClassifier';
+
+const CRAFT_METADATA = {
+  "Madhubani": {
+    artForm: "Madhubani (Mithila) Painting",
+    technique: "Kachni & Bharni Natural Pigment Linework",
+    region: "Mithila Region, Bihar",
+    motifs: ["Kalpavriksha", "Double Line Contour", "Peacock", "Sacred Lotus"]
+  },
+  "Jaipur Blue Pottery": {
+    artForm: "Jaipur Blue Pottery",
+    technique: "Non-Clay Quartz Low-Fire Oxide Glaze",
+    region: "Jaipur, Rajasthan",
+    motifs: ["Turquoise Arabesques", "Persian Palmette", "Cobalt Oxide"]
+  },
+  "Kutch Rogan": {
+    artForm: "Kutch Rogan Art",
+    technique: "Castor Oil Pigment Thread Dragging",
+    region: "Nirona, Kutch, Gujarat",
+    motifs: ["Phool Jhad (Tree of Life)", "Symmetrical Fold Transfer", "Castor Polymer"]
+  },
+  "Bastar Dokra": {
+    artForm: "Bastar Dokra Lost-Wax Bell Metal",
+    technique: "Cire-Perdue Beeswax Thread Casting",
+    region: "Bastar, Chhattisgarh",
+    motifs: ["Hand-wound Wax Coils", "Bell Metal Alloy", "Tribal Totem"]
+  },
+  "Warli": {
+    artForm: "Warli Tribal Painting",
+    technique: "Rice Paste Geometric Motifs on Ochre",
+    region: "Palghar, Maharashtra",
+    motifs: ["Tarpa Circle Dance", "Geometric Triangles", "Harvest"]
+  },
+  "Gond": {
+    artForm: "Gond Tribal Art",
+    technique: "Pradhan Gond Dot & Dash Signature Infill",
+    region: "Dindori, Madhya Pradesh",
+    motifs: ["Mahua Tree", "Forest Spirits", "Rhythmic Pattern Infill"]
+  },
+  "Pattachitra": {
+    artForm: "Raghurajpur Pattachitra",
+    technique: "Tamarind-Treated Tussar Scroll Painting",
+    region: "Puri, Odisha",
+    motifs: ["Dasavatara", "Conch Shell White", "Fine Floral Border"]
+  },
+  "Kalamkari": {
+    artForm: "Srikalahasti Kalamkari",
+    technique: "Bamboo Pen Freehand Botanical Dyeing",
+    region: "Srikalahasti, Andhra Pradesh",
+    motifs: ["Temple Narratives", "Natural Indigo & Madder", "Lotus Vine"]
+  }
+};
 
 export const PaintingDatasetModal = ({ isOpen, onClose }) => {
-  // Active view: 'recognition' | 'archive'
   const [activeTab, setActiveTab] = useState('recognition');
-
-  // Recognition simulation state
-  const [selectedSample, setSelectedSample] = useState('/assets/images/madhubani-tree-of-life.jpg');
+  const [selectedSample, setSelectedSample] = useState('/uploads/crafts/Madhubani/wiki_0.jpg');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState({
     artForm: "Madhubani (Mithila) Painting",
-    technique: "Kachni Style (Fine Line Cross-Hatching)",
-    region: "Mithila Region, Northern Bihar",
-    confidence: 94,
-    detectedMotifs: ["Tree of Life (Kalpavriksha)", "Sacred Peacocks", "Lotus Border", "Double-line contouring"],
+    technique: "Kachni & Bharni Natural Pigment Linework",
+    region: "Mithila Region, Bihar",
+    confidence: 92.4,
+    modelAccuracy: 86.0,
+    totalSamples: 500,
+    detectedMotifs: ["Kalpavriksha", "Double Line Contour", "Peacock", "Sacred Lotus"],
     isUncertain: false
   });
   const [artisanConfirmed, setArtisanConfirmed] = useState(false);
+  const imgRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const sampleImages = [
-    { url: '/assets/images/madhubani-tree-of-life.jpg', name: 'Mithila Tree of Life', form: 'Madhubani' },
-    { url: '/assets/images/jaipur-blue-pottery-urn.jpg', name: 'Persian Blue Urn', form: 'Jaipur Blue Pottery' },
-    { url: '/assets/images/kutch-rogan-art.jpg', name: 'Rogan Castor Thread', form: 'Kutch Rogan' },
-    { url: '/assets/images/dokra-ceremonial-elephant.jpg', name: 'Bastar Elephant', form: 'Dokra Metalcraft' }
+    { url: '/uploads/crafts/Madhubani/wiki_0.jpg', name: 'Madhubani (Bihar)' },
+    { url: '/uploads/crafts/Jaipur_Blue_Pottery/wiki_0.jpg', name: 'Blue Pottery (Rajasthan)' },
+    { url: '/uploads/crafts/Kutch_Rogan/wiki_0.jpg', name: 'Kutch Rogan (Gujarat)' },
+    { url: '/uploads/crafts/Bastar_Dokra/wiki_0.jpg', name: 'Bastar Dokra (CG)' }
   ];
 
-  const handleRunRecognition = (imgUrl, form) => {
-    setSelectedSample(imgUrl);
+  const runRealModelInference = async (imgEl) => {
     setIsAnalyzing(true);
     setArtisanConfirmed(false);
+    try {
+      const res = await predictCraftFromImage(imgEl);
+      const meta = CRAFT_METADATA[res.predictedClass] || {
+        artForm: res.predictedClass,
+        technique: "MobileNetV3-Small Visual Feature Classification",
+        region: "Verified Indian Craft Cluster",
+        motifs: ["Traditional Geometric Lineage", "Handcrafted Texture"]
+      };
 
-    setTimeout(() => {
+      const isUncertain = res.confidence < 55;
+      setRecognitionResult({
+        artForm: isUncertain ? "Uncertain / Hybrid Tradition" : meta.artForm,
+        technique: meta.technique,
+        region: meta.region,
+        confidence: res.confidence,
+        modelAccuracy: res.modelAccuracy,
+        totalSamples: res.totalSamples,
+        detectedMotifs: meta.motifs,
+        isUncertain
+      });
+    } catch (err) {
+      console.error("ONNX inference error:", err);
+    } finally {
       setIsAnalyzing(false);
-      if (form === 'Madhubani') {
-        setRecognitionResult({
-          artForm: "Madhubani (Mithila) Painting",
-          technique: "Kachni Geometric Cross-Hatching",
-          region: "Bihar",
-          confidence: 94,
-          detectedMotifs: ["Kalpavriksha", "Double Line Contour", "Peacock", "Sacred Lotus"],
-          isUncertain: false
-        });
-      } else if (form === 'Jaipur Blue Pottery') {
-        setRecognitionResult({
-          artForm: "Jaipur Blue Pottery",
-          technique: "Non-Clay Quartz Low-Fire Glaze",
-          region: "Rajasthan",
-          confidence: 91,
-          detectedMotifs: ["Turquoise Arabesques", "Persian Palmette", "Cobalt Oxide"],
-          isUncertain: false
-        });
-      } else if (form === 'Kutch Rogan') {
-        setRecognitionResult({
-          artForm: "Kutch Rogan Art",
-          technique: "Castor Oil Pigment Thread Dragging",
-          region: "Gujarat",
-          confidence: 89,
-          detectedMotifs: ["Phool Jhad (Tree of Life)", "Symmetrical Fold Transfer", "Castor Polymer"],
-          isUncertain: false
-        });
-      } else {
-        // Uncertain simulation demonstration
-        setRecognitionResult({
-          artForm: "Uncertain / Hybrid Tradition",
-          technique: "Ambiguous Motif Geometry",
-          region: "Multiple Possibilities (Central India)",
-          confidence: 58,
-          detectedMotifs: ["Wire lattice", "Stylized animal"],
-          isUncertain: true
-        });
-      }
-    }, 700);
+    }
+  };
+
+  const handleSelectSample = (imgUrl) => {
+    setSelectedSample(imgUrl);
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const objectUrl = URL.createObjectURL(file);
+    setSelectedSample(objectUrl);
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
-      <div 
-        className="modal-card modal-card-large" 
+      <div
+        className="modal-card modal-card-large"
         onClick={(e) => e.stopPropagation()}
         style={{ padding: 0 }}
       >
@@ -88,10 +134,10 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
           <div>
             <span className="craft-seal-badge" style={{ marginBottom: '4px' }}>
               <Compass size={13} />
-              <span>Cultural Knowledge & Dataset Architecture</span>
+              <span>Trained MobileNetV3-Small ONNX • {recognitionResult.modelAccuracy}% Val Accuracy ({recognitionResult.totalSamples} Real Samples)</span>
             </span>
             <h3 style={{ fontSize: '1.4rem' }}>
-              Painting Recognition & Verified Archival Records
+              Real-Time Craft Recognition & Verified Archival Records
             </h3>
           </div>
           <button className="modal-close-btn" onClick={onClose}>✕</button>
@@ -117,7 +163,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
             }}
           >
             <Sparkles size={16} />
-            <span>1. Painting Recognition Tool</span>
+            <span>1. Live SML Craft Classifier (ONNX)</span>
           </button>
 
           <button
@@ -138,7 +184,6 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
         </div>
 
         <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          {/* TAB 1: PAINTING RECOGNITION */}
           {activeTab === 'recognition' && (
             <div>
               <div style={{
@@ -155,7 +200,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
               }}>
                 <ShieldCheck size={18} style={{ flexShrink: 0 }} />
                 <div>
-                  <strong>Architectural Separation:</strong> Painting recognition only suggests likely art form candidates. It never claims cultural significance on its own, explicitly allows <em>Uncertain</em>, and requires the artisan's confirmation.
+                  <strong>Real Trained SML Model:</strong> Running live browser inference via <code>aaroh_classifier.onnx</code> trained on 8 Indian craft classes. Low-confidence predictions (&lt;55%) trigger manual artisan verification.
                 </div>
               </div>
 
@@ -167,7 +212,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                 {/* Left: Input Selection */}
                 <div>
                   <h4 style={{ marginBottom: '10px', fontSize: '1rem', color: 'var(--accent-indigo)' }}>
-                    Select or Upload Sample Craft Artwork
+                    Select Sample or Upload Craft Photo
                   </h4>
 
                   <div style={{
@@ -179,18 +224,21 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                     marginBottom: '14px',
                     border: '1px solid var(--border-subtle)'
                   }}>
-                    <img 
-                      src={selectedSample} 
-                      alt="Sample craft" 
+                    <img
+                      ref={imgRef}
+                      src={selectedSample}
+                      crossOrigin="anonymous"
+                      onLoad={(e) => runRealModelInference(e.currentTarget)}
+                      alt="Sample craft"
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '14px' }}>
                     {sampleImages.map((s, idx) => (
                       <button
                         key={idx}
-                        onClick={() => handleRunRecognition(s.url, s.form)}
+                        onClick={() => handleSelectSample(s.url)}
                         style={{
                           height: '60px',
                           borderRadius: 'var(--radius-sm)',
@@ -204,25 +252,33 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                     ))}
                   </div>
 
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
                   <button
                     className="btn-secondary"
-                    onClick={() => handleRunRecognition(selectedSample, 'Uncertain')}
-                    style={{ width: '100%', fontSize: '0.85rem' }}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ width: '100%', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
-                    Test "Uncertain / Ambiguous" Edge Case
+                    <Upload size={16} />
+                    <span>Upload Any Craft Image to Test SML Model</span>
                   </button>
                 </div>
 
                 {/* Right: Recognition Output */}
                 <div>
                   <h4 style={{ marginBottom: '10px', fontSize: '1rem', color: 'var(--accent-indigo)' }}>
-                    Model Analysis Output
+                    Live MobileNetV3 Inference Output
                   </h4>
 
                   {isAnalyzing ? (
                     <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
                       <Sparkles size={28} className="animate-pulse-subtle" style={{ margin: '0 auto 12px' }} />
-                      <p>Analyzing line geometry, pigments, and regional motifs...</p>
+                      <p>Running MobileNetV3-Small ONNX tensor classification...</p>
                     </div>
                   ) : (
                     <div style={{
@@ -238,14 +294,14 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                             <span>Result: UNCERTAIN (Confidence: {recognitionResult.confidence}%)</span>
                           </div>
                           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-                            The visual model could not confidently identify an established traditional school without ambiguous overlap. Aaroh prompts the artisan to manually designate the lineage.
+                            Confidence is below the 55% threshold. Aaroh prompts the artisan to manually designate the regional craft lineage.
                           </p>
                         </div>
                       ) : (
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <span className="badge badge-in-stock">Confidence: {recognitionResult.confidence}%</span>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Region: {recognitionResult.region}</span>
+                            <span className="badge badge-in-stock">Softmax Confidence: {recognitionResult.confidence}%</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{recognitionResult.region}</span>
                           </div>
 
                           <h3 style={{ fontSize: '1.25rem', color: 'var(--accent-indigo)', marginBottom: '4px' }}>
@@ -257,7 +313,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
 
                           <div style={{ marginBottom: '16px' }}>
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>
-                              Identified Traditional Motifs:
+                              Identified Regional Motifs:
                             </span>
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                               {recognitionResult.detectedMotifs.map((m, i) => (
@@ -276,7 +332,6 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
                         </div>
                       )}
 
-                      {/* Artisan Confirmation Prompt */}
                       <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-strong)', marginTop: '16px' }}>
                         <div style={{ fontSize: '0.84rem', color: 'var(--text-primary)', marginBottom: '10px' }}>
                           <strong>Artisan Confirmation Required:</strong>
@@ -303,12 +358,11 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {/* TAB 2: CURATED CULTURAL ARCHIVE */}
           {activeTab === 'archive' && (
             <div>
               <div style={{ marginBottom: '20px' }}>
                 <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)' }}>
-                  Aaroh’s reviewed cultural records track image source, artist or creator where known, licensing permissions, labels, and academic reviewer. We do not scrape unverified online images.
+                  Aaroh’s reviewed cultural records track image source, artist or creator where known, licensing permissions, labels, and academic reviewer.
                 </p>
               </div>
 

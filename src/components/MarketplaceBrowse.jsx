@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, RotateCcw, ShoppingBag, Eye, MapPin, Sparkles, Check, ArrowUpDown } from 'lucide-react';
+import { Search, RotateCcw, ShoppingBag, Eye, MapPin, Sparkles, Paintbrush } from 'lucide-react';
 import { TRANSLATIONS } from '../data/translations';
 
 export const MarketplaceBrowse = ({
@@ -19,12 +19,24 @@ export const MarketplaceBrowse = ({
   const [selectedAvailability, setSelectedAvailability] = useState('All');
   const [sortBy, setSortBy] = useState('featured');
 
-  // Filter Categories
   const categories = ['All', 'Painting', 'Pottery', 'Metalcraft', 'Handloom & Textiles', 'Embroidery'];
-  const regions = ['All', 'Bihar', 'Rajasthan', 'Chhattisgarh', 'Gujarat', 'Odisha', 'Tamil Nadu'];
-  const materials = ['All', 'Lokta Paper', 'Quartz Stone', 'Beeswax & Bell Metal', 'Mulberry Silk', 'Natural Pigments'];
+  const regions = [
+    'All',
+    'Andhra Pradesh',
+    'Bihar',
+    'Chhattisgarh',
+    'Gujarat',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Odisha',
+    'Rajasthan',
+    'Tamil Nadu',
+    'Uttar Pradesh',
+    'West Bengal',
+    'Jammu & Kashmir'
+  ];
+  const materials = ['All', 'Lokta', 'Quartz Stone', 'Beeswax', 'Silk', 'Cotton', 'Rice Paste', 'Pigments'];
 
-  // Reset all filters
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedCategory('All');
@@ -37,46 +49,43 @@ export const MarketplaceBrowse = ({
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
-      // Direct Craft Filter ID match if clicked from featured crafts
       if (selectedCraftFilter && product.craftId !== selectedCraftFilter) {
         return false;
       }
 
-      // Search Query (matches title, craftName, artisanName, materials, region)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = product.title.toLowerCase().includes(q);
         const matchesCraft = product.craftName.toLowerCase().includes(q);
         const matchesArtisan = product.artisanName.toLowerCase().includes(q);
         const matchesRegion = product.artisanLocation.toLowerCase().includes(q);
+        const matchesState = (product.state || '').toLowerCase().includes(q);
         const matchesMaterial = product.materials.some(m => m.toLowerCase().includes(q));
-        if (!matchesTitle && !matchesCraft && !matchesArtisan && !matchesRegion && !matchesMaterial) {
+        if (!matchesTitle && !matchesCraft && !matchesArtisan && !matchesRegion && !matchesState && !matchesMaterial) {
           return false;
         }
       }
 
-      // Category Filter
       if (selectedCategory !== 'All') {
-        if (selectedCategory === 'Painting' && !product.craftName.toLowerCase().includes('painting')) return false;
+        if (selectedCategory === 'Painting' && !product.craftName.toLowerCase().includes('painting') && !product.craftName.toLowerCase().includes('pattachitra') && !product.craftName.toLowerCase().includes('art')) return false;
         if (selectedCategory === 'Pottery' && !product.craftName.toLowerCase().includes('pottery')) return false;
-        if (selectedCategory === 'Metalcraft' && !product.craftName.toLowerCase().includes('metal')) return false;
-        if (selectedCategory === 'Handloom & Textiles' && !product.craftName.toLowerCase().includes('rogan') && !product.craftName.toLowerCase().includes('textile')) return false;
+        if (selectedCategory === 'Metalcraft' && !product.craftName.toLowerCase().includes('metal') && !product.craftName.toLowerCase().includes('dokra')) return false;
+        if (selectedCategory === 'Handloom & Textiles' && !product.craftName.toLowerCase().includes('rogan') && !product.craftName.toLowerCase().includes('kalamkari') && !product.craftName.toLowerCase().includes('textile')) return false;
       }
 
-      // Region Filter
       if (selectedRegion !== 'All') {
-        if (!product.artisanLocation.toLowerCase().includes(selectedRegion.toLowerCase())) {
+        const stateMatch = (product.state || '').toLowerCase().includes(selectedRegion.toLowerCase());
+        const locMatch = product.artisanLocation.toLowerCase().includes(selectedRegion.toLowerCase());
+        if (!stateMatch && !locMatch) {
           return false;
         }
       }
 
-      // Material Filter
       if (selectedMaterial !== 'All') {
         const hasMat = product.materials.some(m => m.toLowerCase().includes(selectedMaterial.toLowerCase()));
         if (!hasMat) return false;
       }
 
-      // Availability Filter
       if (selectedAvailability !== 'All') {
         if (selectedAvailability === 'In Stock' && !product.readyMade) return false;
         if (selectedAvailability === 'Made to Order' && product.readyMade) return false;
@@ -86,7 +95,7 @@ export const MarketplaceBrowse = ({
     }).sort((a, b) => {
       if (sortBy === 'price-low') return a.price - b.price;
       if (sortBy === 'price-high') return b.price - a.price;
-      return 0; // default featured
+      return 0;
     });
   }, [products, searchQuery, selectedCategory, selectedRegion, selectedMaterial, selectedAvailability, selectedCraftFilter, sortBy]);
 
@@ -95,7 +104,6 @@ export const MarketplaceBrowse = ({
   return (
     <section id="marketplace-section" className="section-spacing" style={{ backgroundColor: 'var(--bg-primary)' }}>
       <div className="container">
-        {/* Marketplace Section Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -107,15 +115,14 @@ export const MarketplaceBrowse = ({
           <div>
             <div className="craft-seal-badge" style={{ marginBottom: '10px' }}>
               <Sparkles size={13} />
-              <span>Conscious Living Marketplace</span>
+              <span>All-India State Craft Directory & Custom Commissions</span>
             </div>
             <h2>Handmade Works & Direct Guild Offerings</h2>
             <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Every creation is cataloged directly with the artisan collective, verified origin, and transparent pricing.
+              Search by any Indian state (e.g. Rajasthan, Bihar, Odisha, Maharashtra) to buy ready pieces or commission custom work directly from local artisans.
             </p>
           </div>
 
-          {/* Quick Sort Dropdown */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '0.86rem', color: 'var(--text-muted)' }}>Sort by:</span>
             <select
@@ -146,37 +153,34 @@ export const MarketplaceBrowse = ({
             gap: '14px',
             alignItems: 'center'
           }}>
-            {/* Search Input */}
             <div style={{ position: 'relative', gridColumn: 'span 2' }}>
-              <Search 
-                size={18} 
-                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} 
+              <Search
+                size={18}
+                style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}
               />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t.nav_search_placeholder}
+                placeholder="Search Indian State (e.g., Rajasthan, Bihar), Craft, or Artisan..."
                 className="form-input"
                 style={{ paddingLeft: '42px' }}
               />
             </div>
 
-            {/* Region Filter */}
             <div>
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
                 className="form-select"
               >
-                <option value="All">All Regions / States</option>
+                <option value="All">All Indian States</option>
                 {regions.filter(r => r !== 'All').map(r => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
             </div>
 
-            {/* Raw Material Filter */}
             <div>
               <select
                 value={selectedMaterial}
@@ -190,7 +194,6 @@ export const MarketplaceBrowse = ({
               </select>
             </div>
 
-            {/* Availability Filter */}
             <div>
               <select
                 value={selectedAvailability}
@@ -199,12 +202,11 @@ export const MarketplaceBrowse = ({
               >
                 <option value="All">All Availability</option>
                 <option value="In Stock">In Stock (Ready to Ship)</option>
-                <option value="Made to Order">Made to Order</option>
+                <option value="Made to Order">Made to Order / Custom</option>
               </select>
             </div>
           </div>
 
-          {/* Category Filter Pills & Reset Button */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -281,34 +283,39 @@ export const MarketplaceBrowse = ({
             gap: '28px'
           }}>
             {filteredProducts.map((product) => (
-              <div 
-                key={product.id} 
+              <div
+                key={product.id}
                 className="product-card"
                 onClick={() => onOpenProduct(product.id)}
                 style={{ cursor: 'pointer' }}
               >
-                {/* Product Photo on Calm Neutral Background */}
                 <div className="product-image-container">
-                  <img 
-                    src={product.image} 
-                    alt={product.title} 
+                  <img
+                    src={product.image}
+                    alt={product.title}
                     className="product-image"
                     loading="lazy"
                   />
 
-                  {/* Availability Badge */}
                   <div style={{
                     position: 'absolute',
                     top: '12px',
                     left: '12px',
-                    zIndex: 2
+                    zIndex: 2,
+                    display: 'flex',
+                    gap: '6px',
+                    flexWrap: 'wrap'
                   }}>
                     <span className={`badge ${product.readyMade ? 'badge-in-stock' : 'badge-made-to-order'}`}>
                       {product.readyMade ? t.badge_in_stock : t.badge_made_to_order}
                     </span>
+                    {product.state && (
+                      <span className="badge" style={{ backgroundColor: 'rgba(20, 20, 30, 0.78)', color: '#fff' }}>
+                        {product.state}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Quick Action Overlay */}
                   <div style={{
                     position: 'absolute',
                     bottom: '12px',
@@ -330,7 +337,6 @@ export const MarketplaceBrowse = ({
                   </div>
                 </div>
 
-                {/* Product Information */}
                 <div className="product-info">
                   <div style={{ fontSize: '0.78rem', color: 'var(--accent-ochre)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
                     {product.craftName}
@@ -349,12 +355,24 @@ export const MarketplaceBrowse = ({
                     {product.title}
                   </h3>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '10px' }}>
                     <MapPin size={13} color="var(--accent-rose)" />
                     <span>{product.artisanName} • {product.artisanLocation}</span>
                   </div>
 
-                  {/* Materials Preview Chips */}
+                  <div style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--accent-olive)',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    marginBottom: '12px'
+                  }}>
+                    <Paintbrush size={13} />
+                    <span>Direct Custom Commission Available with Local Artisan</span>
+                  </div>
+
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
                     {product.materials.slice(0, 2).map((m, i) => (
                       <span key={i} style={{
@@ -369,7 +387,6 @@ export const MarketplaceBrowse = ({
                     ))}
                   </div>
 
-                  {/* Card Footer: Price & Story trigger */}
                   <div style={{
                     marginTop: 'auto',
                     paddingTop: '14px',
@@ -385,7 +402,7 @@ export const MarketplaceBrowse = ({
                       </span>
                     </div>
 
-                    <button 
+                    <button
                       className="btn-ghost"
                       style={{ fontSize: '0.84rem', color: 'var(--accent-indigo)', fontWeight: 600, padding: '4px 8px' }}
                     >
