@@ -41,6 +41,15 @@ export const storeSession = (token, user) => {
   notifyListeners(user);
 };
 
+export const clearSession = () => {
+  try {
+    localStorage.removeItem(CACHED_USER_KEY);
+    localStorage.removeItem('aaroh_jwt_token');
+    localStorage.removeItem('aaroh_authenticated_user');
+  } catch {}
+  notifyListeners(null);
+};
+
 export const getStoredToken = () => {
   try {
     // Token is stored as a plain string (not JSON)
@@ -49,15 +58,6 @@ export const getStoredToken = () => {
     console.warn('[apiAuth] Failed to read stored token:', e);
     return null;
   }
-};
-
-export const clearSession = () => {
-  try {
-    localStorage.removeItem(CACHED_USER_KEY);
-    localStorage.removeItem('aaroh_jwt_token');
-    localStorage.removeItem('aaroh_authenticated_user');
-  } catch {}
-  notifyListeners(null);
 };
 
 export const subscribeToAuthService = (callback) => {
@@ -625,7 +625,12 @@ export const getMe = async () => {
     }
     clearSession();
     return null;
-  } catch {
+  } catch (err) {
+    // On static hosting (e.g. Vercel without backend API), /api/auth/me returns 404.
+    // Silently fall back to cached demo user or guest mode (null) without throwing.
+    if (err?.status === 404) {
+      return getStoredUser() || null;
+    }
     clearSession();
     return null;
   }

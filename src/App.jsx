@@ -166,7 +166,12 @@ export function App() {
         }
 
         window.history.replaceState(null, '', window.location.pathname);
-        const verifiedUser = await verifyActiveSession();
+        let verifiedUser = null;
+        try {
+          verifiedUser = await verifyActiveSession();
+        } catch {
+          // Silently continue in guest/demo mode if backend auth is unavailable
+        }
 
         if (verifiedUser?.role === 'admin' || role === 'admin') {
           handleOpenAdmin();
@@ -175,7 +180,11 @@ export function App() {
         }
         return;
       }
-      verifyActiveSession();
+      try {
+        await verifyActiveSession();
+      } catch {
+        // Silently continue in guest/demo mode if backend auth is unavailable
+      }
     };
 
     const unsubscribe = subscribeToAuthService((user) => {

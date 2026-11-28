@@ -38,6 +38,11 @@ export const ExploreAarohSection = ({
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedStory, setSelectedStory] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [searchQuery, selectedCategory, selectedRegion]);
 
   const categoryOptions = [
     { id: 'All', key: 'filter_all' },
@@ -47,7 +52,8 @@ export const ExploreAarohSection = ({
     { id: 'Handloom & Textiles', key: 'filter_textiles' },
     { id: 'Embroidery', key: 'filter_embroidery' }
   ];
-  const regions = ['All', 'Bihar', 'Rajasthan', 'Chhattisgarh', 'Gujarat', 'Odisha', 'Tamil Nadu'];
+  const categories = ['All', 'Painting', 'Pottery', 'Metalcraft', 'Handloom & Textiles', 'Embroidery'];
+  const regions = ['All', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Puducherry'];
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -61,11 +67,21 @@ export const ExploreAarohSection = ({
       }
 
       if (selectedCategory !== 'All') {
-        if (selectedCategory === 'Painting' && !product.craftName.toLowerCase().includes('painting')) return false;
-        if (selectedCategory === 'Pottery' && !product.craftName.toLowerCase().includes('pottery')) return false;
-        if (selectedCategory === 'Metalcraft' && !product.craftName.toLowerCase().includes('metal')) return false;
-        if (selectedCategory === 'Handloom & Textiles' && !product.craftName.toLowerCase().includes('rogan') && !product.craftName.toLowerCase().includes('textile')) return false;
-        if (selectedCategory === 'Embroidery' && !product.craftName.toLowerCase().includes('embroidery')) return false;
+        if (product.category === selectedCategory) {
+          // direct match
+        } else if (selectedCategory === 'Painting' && product.craftName?.toLowerCase().includes('painting')) {
+          // matched
+        } else if (selectedCategory === 'Pottery' && product.craftName?.toLowerCase().includes('pottery')) {
+          // matched
+        } else if (selectedCategory === 'Metalcraft' && product.craftName?.toLowerCase().includes('metal')) {
+          // matched
+        } else if (selectedCategory === 'Handloom & Textiles' && (product.craftName?.toLowerCase().includes('rogan') || product.craftName?.toLowerCase().includes('textile') || product.craftName?.toLowerCase().includes('saree') || product.craftName?.toLowerCase().includes('shawl'))) {
+          // matched
+        } else if (selectedCategory === 'Embroidery' && product.craftName?.toLowerCase().includes('embroidery')) {
+          // matched
+        } else if (product.category !== selectedCategory) {
+          return false;
+        }
       }
 
       if (selectedRegion !== 'All') {
@@ -197,11 +213,11 @@ export const ExploreAarohSection = ({
         {/* Step 4: Selected Products Grid on Calm Backgrounds */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '28px',
-          marginBottom: '64px'
+          marginBottom: visibleCount < filteredProducts.length ? '32px' : '64px'
         }}>
-          {filteredProducts.map((product, idx) => (
+          {filteredProducts.slice(0, visibleCount).map((product, idx) => (
             <div
               key={product.id}
               className={`product-card scroll-reveal delay-${(idx % 4) + 1} ${isInView ? 'is-revealed' : ''}`}
@@ -289,6 +305,22 @@ export const ExploreAarohSection = ({
           ))}
         </div>
 
+        {visibleCount < filteredProducts.length && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '64px' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setVisibleCount((prev) => prev + 12)}
+              style={{ padding: '12px 28px', fontSize: '0.95rem', fontWeight: 600 }}
+            >
+              <span>Load More Crafts</span>
+              <span style={{ opacity: 0.75, marginLeft: '8px', fontSize: '0.85rem' }}>
+                ({Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length})
+              </span>
+            </button>
+          </div>
+        )}
+
         {/* Step 5: Artisan Chronicles / Story Cards */}
         <div 
           className={`scroll-reveal delay-3 ${isInView ? 'is-revealed' : ''}`}
@@ -313,7 +345,7 @@ export const ExploreAarohSection = ({
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {CULTURAL_JOURNAL_STORIES.map((story) => (
               <div 
                 key={story.id}
@@ -387,7 +419,7 @@ export const ExploreAarohSection = ({
         {/* Step 6: Clear Action Banners for Joining / Selling */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
           gap: '24px'
         }}>
           {/* Sell with Aaroh Card */}

@@ -1,0 +1,25 @@
+{
+  "architecture": "MobileNetV3-Small (Transfer Learning)",
+  "total_samples": 500,
+  "accuracy": 86.0,
+  "classes": [
+    "Bastar_Dokra",
+    "Gond",
+    "Jaipur_Blue_Pottery",
+    "Kalamkari",
+    "Kutch_Rogan",
+    "Madhubani",
+    "Pattachitra",
+    "Warli"
+  ],
+  "f1_scores": {
+    "Bastar_Dokra": 0.818,
+    "Gond": 0.903,
+    "Jaipur_Blue_Pottery": 1.0,
+    "Kalamkari": 0.917,
+    "Kutch_Rogan": 0.7,
+    "Madhubani": 0.96,
+    "Pattachitra": 0.72,
+    "Warli": 0.872
+  }
+}
