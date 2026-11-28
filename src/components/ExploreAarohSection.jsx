@@ -38,6 +38,11 @@ export const ExploreAarohSection = ({
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedRegion, setSelectedRegion] = useState('All');
   const [selectedStory, setSelectedStory] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(12);
+
+  useEffect(() => {
+    setVisibleCount(12);
+  }, [searchQuery, selectedCategory, selectedRegion]);
 
   const categories = ['All', 'Painting', 'Pottery', 'Metalcraft', 'Handloom & Textiles', 'Embroidery'];
   const regions = ['All', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Puducherry'];
@@ -191,9 +196,9 @@ export const ExploreAarohSection = ({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '28px',
-          marginBottom: '64px'
+          marginBottom: visibleCount < filteredProducts.length ? '32px' : '64px'
         }}>
-          {filteredProducts.map((product, idx) => (
+          {filteredProducts.slice(0, visibleCount).map((product, idx) => (
             <div
               key={product.id}
               className={`product-card scroll-reveal delay-${(idx % 4) + 1} ${isInView ? 'is-revealed' : ''}`}
@@ -280,6 +285,22 @@ export const ExploreAarohSection = ({
             </div>
           ))}
         </div>
+
+        {visibleCount < filteredProducts.length && (
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '64px' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setVisibleCount((prev) => prev + 12)}
+              style={{ padding: '12px 28px', fontSize: '0.95rem', fontWeight: 600 }}
+            >
+              <span>Load More Crafts</span>
+              <span style={{ opacity: 0.75, marginLeft: '8px', fontSize: '0.85rem' }}>
+                ({Math.min(visibleCount, filteredProducts.length)} of {filteredProducts.length})
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Step 5: Artisan Chronicles / Story Cards */}
         <div 

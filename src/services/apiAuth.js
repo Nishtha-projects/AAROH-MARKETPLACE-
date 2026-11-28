@@ -606,7 +606,12 @@ export const getMe = async () => {
     }
     clearSession();
     return null;
-  } catch {
+  } catch (err) {
+    // On static hosting (e.g. Vercel without backend API), /api/auth/me returns 404.
+    // Silently fall back to cached demo user or guest mode (null) without throwing.
+    if (err?.status === 404) {
+      return getStoredUser() || null;
+    }
     clearSession();
     return null;
   }
