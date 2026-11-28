@@ -40,7 +40,7 @@ export const ExploreAarohSection = ({
   const [selectedStory, setSelectedStory] = useState(null);
 
   const categories = ['All', 'Painting', 'Pottery', 'Metalcraft', 'Handloom & Textiles', 'Embroidery'];
-  const regions = ['All', 'Bihar', 'Rajasthan', 'Chhattisgarh', 'Gujarat', 'Odisha', 'Tamil Nadu'];
+  const regions = ['All', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Puducherry'];
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
