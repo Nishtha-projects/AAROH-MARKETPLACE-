@@ -92,7 +92,7 @@ export const EnquiryModal = ({
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '14px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Your Name</label>
                   <input
@@ -115,7 +115,7 @@ export const EnquiryModal = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '14px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Phone Number</label>
                   <input
@@ -140,7 +140,7 @@ export const EnquiryModal = ({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '14px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Requested Quantity</label>
                   <input

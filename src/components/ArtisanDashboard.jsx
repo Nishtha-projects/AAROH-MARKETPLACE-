@@ -552,7 +552,7 @@ export const ArtisanDashboard = ({
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" style={{ padding: '16px' }}>
       <div 
-        className="modal-card modal-card-large" 
+        className="modal-card modal-card-large responsive-dashboard-card" 
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '1240px',
@@ -565,7 +565,7 @@ export const ArtisanDashboard = ({
         }}
       >
         {/* LEFT: DEEP FOREST GREEN ILLUSTRATED SIDEBAR (Reference Mood) */}
-        <div style={{
+        <div className="responsive-dashboard-sidebar" style={{
           width: '280px',
           backgroundColor: '#1E3524',
           color: '#FAF6EE',
@@ -577,7 +577,7 @@ export const ArtisanDashboard = ({
         }}>
           <div>
             {/* Wooden Plaque Brand Header */}
-            <div style={{
+            <div className="responsive-dashboard-sidebar-header" style={{
               backgroundColor: '#2A4732',
               borderRadius: 'var(--radius-md)',
               padding: '14px 16px',
@@ -608,7 +608,7 @@ export const ArtisanDashboard = ({
             </div>
 
             {/* Navigation Links */}
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <nav className="responsive-dashboard-nav" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
                 { id: 'overview', label: 'Studio Overview', icon: Home },
                 { id: 'new-listing', label: 'Voice & AI Draft', icon: Mic, badge: 'Studio' },
@@ -673,7 +673,7 @@ export const ArtisanDashboard = ({
           </div>
 
           {/* Cozy Nature Guild Tip at bottom */}
-          <div style={{
+          <div className="responsive-dashboard-sidebar-wisdom" style={{
             backgroundColor: '#27412E',
             borderRadius: 'var(--radius-md)',
             padding: '14px',
@@ -691,7 +691,7 @@ export const ArtisanDashboard = ({
 
           {/* Account Security Sanctuary Button */}
           {onOpenSecurity && (
-            <div style={{ marginTop: '12px' }}>
+            <div className="responsive-dashboard-sidebar-footer" style={{ marginTop: '12px' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -722,7 +722,7 @@ export const ArtisanDashboard = ({
 
           {/* Artisan Sign Out Button */}
           {onSignOut && (
-            <div style={{ marginTop: '8px' }}>
+            <div className="responsive-dashboard-sidebar-footer" style={{ marginTop: '8px' }}>
               <button
                 type="button"
                 onClick={onSignOut}
@@ -745,7 +745,7 @@ export const ArtisanDashboard = ({
         </div>
 
         {/* RIGHT: WARM SOFT CREAM CANVAS & CONTENT */}
-        <div style={{
+        <div className="responsive-dashboard-content" style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -754,9 +754,11 @@ export const ArtisanDashboard = ({
         }}>
           {/* Top Bar on Cream Canvas */}
           <div style={{
-            padding: '18px 32px',
+            padding: 'clamp(14px, 3vw, 18px) clamp(16px, 4vw, 32px)',
             borderBottom: '1px solid #EBE4D5',
             display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
             alignItems: 'center',
             justifyContent: 'space-between',
             backgroundColor: '#FFFDF9'
@@ -774,7 +776,7 @@ export const ArtisanDashboard = ({
               </h2>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="responsive-top-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button
                 className="btn-secondary"
                 onClick={() => setShowTutorial(true)}

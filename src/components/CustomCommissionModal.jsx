@@ -365,7 +365,7 @@ export const CustomCommissionModal = ({
               </div>
 
               {/* Step 4: Details & Budget */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Commission Title</label>
                   <input
@@ -400,7 +400,7 @@ export const CustomCommissionModal = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '24px' }}>
+              <div className="responsive-form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '24px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label className="form-label">Desired Dimensions</label>
                   <input

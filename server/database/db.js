@@ -504,6 +504,39 @@ if (existingCount && existingCount.count === 0) {
   logStmt.run('patron_aditi_narang', 'patron@aaroh.in', 'ACCOUNT_SEEDED', '127.0.0.1', 'System Seed', 'Craft Patron seeded with User ID ARH-000202', now);
 }
 
+// Ensure default admin account exists
+const existingAdmin = db.prepare("SELECT id FROM users WHERE role = 'admin'").get();
+if (!existingAdmin) {
+  const seedSalt = bcrypt.genSaltSync(10);
+  const defaultHash = bcrypt.hashSync('Password@123', seedSalt);
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO users (
+      id, user_id, full_name, name, email, email_normalized, phone_number, phone, password_hash, role, 
+      avatar, email_verified, phone_verified, created_at, updated_at, last_login, password_updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin', NULL, 1, 1, ?, ?, ?, ?)
+  `).run(
+    'admin_system',
+    'ARH-000303',
+    'Aaroh System Administrator',
+    'Aaroh System Administrator',
+    'admin@aaroh.in',
+    'admin@aaroh.in',
+    '+919845099009',
+    '+91 98450 99009',
+    defaultHash,
+    now,
+    now,
+    now,
+    now
+  );
+  db.prepare(`
+    INSERT INTO security_logs (user_id, identifier, event, ip_address, user_agent, details, created_at)
+    VALUES (?, ?, 'ACCOUNT_SEEDED', '127.0.0.1', 'System Seed', 'System Administrator seeded with User ID ARH-000303', ?)
+  `).run('admin_system', 'admin@aaroh.in', now);
+}
+
 /**
  * Safe initialization of an administrative account via environment variables
  * Triggered on server startup if ADMIN_EMAIL and ADMIN_INITIAL_PASSWORD are configured in server/.env

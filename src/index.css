@@ -708,11 +708,290 @@ button {
   margin-top: 12px;
 }
 
-/* Responsiveness */
+/* =====================================================================
+   RESPONSIVE DESIGN & MOBILE LAYOUT SYSTEM
+   ===================================================================== */
+
+.mobile-menu-toggle {
+  display: none;
+}
+
 @media (max-width: 900px) {
+  .desktop-nav,
   .nav-links {
+    display: none !important;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 640px) {
+  .desktop-only-action {
+    display: none !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .top-notice-bar {
     display: none;
   }
+
+  .header-inner {
+    padding: 10px 0;
+  }
+
+  .brand-title {
+    font-size: 1.3rem !important;
+  }
+
+  .header-actions {
+    gap: 6px !important;
+  }
+
+  .header-lang-btn {
+    padding: 4px 10px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .header-auth-wrap .btn-primary {
+    padding: 7px 12px !important;
+    font-size: 0.8rem !important;
+  }
+
+  /* Modals on Mobile Phones */
+  .modal-overlay {
+    padding: 8px !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-card,
+  .modal-card-large {
+    max-height: 94vh !important;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .modal-header {
+    padding: 16px 18px !important;
+  }
+
+  .modal-body {
+    padding: 16px !important;
+  }
+
+  /* Form Grids stack cleanly on mobile */
+  .responsive-form-grid-2,
+  .responsive-form-grid-3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Touch Targets */
+  .btn-primary,
+  .btn-secondary,
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: 44px;
+    font-size: 16px !important; /* Prevents auto-zoom on iOS */
+  }
+
+  .btn-icon {
+    min-width: 42px;
+    min-height: 42px;
+  }
+}
+
+/* Mobile Navigation Drawer */
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(14, 18, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.2s ease;
+}
+
+.mobile-nav-panel {
+  width: 100%;
+  max-width: 340px;
+  height: 100%;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-float);
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[dir="rtl"] .mobile-nav-panel {
+  border-left: none;
+  border-right: 1px solid var(--border-subtle);
+  animation: slideInLeftRTL 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-nav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 16px;
+}
+
+.mobile-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-primary);
+  font-size: 0.96rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-height: 44px;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item.active {
+  background: var(--bg-surface-subtle);
+  color: var(--accent-indigo);
+  border-color: var(--border-strong);
+}
+
+.mobile-nav-portal-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.mobile-pref-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+/* Responsive Artisan & Customer Dashboards */
+@media (max-width: 900px) {
+  .responsive-dashboard-card {
+    flex-direction: column !important;
+    height: 96vh !important;
+    max-height: 96vh !important;
+    overflow-y: auto !important;
+  }
+
+  .responsive-dashboard-sidebar {
+    width: 100% !important;
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(235, 228, 213, 0.2);
+    flex-shrink: 0;
+  }
+
+  .responsive-dashboard-sidebar-header {
+    margin-bottom: 12px !important;
+    padding: 10px 14px !important;
+  }
+
+  .responsive-dashboard-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .responsive-dashboard-nav button {
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .responsive-dashboard-sidebar-wisdom,
+  .responsive-dashboard-sidebar-footer {
+    display: none !important;
+  }
+
+  .responsive-dashboard-content {
+    padding: 16px !important;
+  }
+
+  .responsive-top-actions {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .responsive-top-actions button {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* Responsive Tables for Admin & Activity Logs */
+.responsive-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.responsive-table-wrapper table {
+  min-width: 640px;
+}
+
+/* Calm Motion Overrides */
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }
 
 /* =====================================================================

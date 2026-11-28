@@ -319,7 +319,7 @@ export const ProductDetailModal = ({
               borderRadius: 'var(--radius-sm)',
               padding: '16px 20px',
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '14px',
               fontSize: '0.86rem',
               marginBottom: '24px'
@@ -349,7 +349,7 @@ export const ProductDetailModal = ({
 
             {/* Action Buttons */}
             <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -389,7 +389,7 @@ export const ProductDetailModal = ({
               </div>
 
               {/* Secondary Actions: Enquire & Custom Commission */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
                 <button
                   className="btn-secondary"
                   onClick={() => {

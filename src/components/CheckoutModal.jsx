@@ -126,7 +126,7 @@ export const CheckoutModal = ({
           </div>
         </div>
 
-        <div className="modal-body">
+        <div className="modal-body" style={{ maxHeight: '80vh', overflowY: 'auto', padding: 'clamp(14px, 3vw, 24px)' }}>
           {completedOrder ? (
             /* Order Placed Success View */
             <div style={{ textAlign: 'center', padding: '32px 16px' }}>
@@ -212,7 +212,7 @@ export const CheckoutModal = ({
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="responsive-form-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                     <div className="form-group">
                       <label className="form-label">Phone Number (For OTP/Courier)</label>
                       <input
@@ -246,7 +246,7 @@ export const CheckoutModal = ({
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div className="responsive-form-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px' }}>
                     <div className="form-group">
                       <label className="form-label">City</label>
                       <input

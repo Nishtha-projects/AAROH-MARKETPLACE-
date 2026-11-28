@@ -258,7 +258,7 @@ export const PaintingDatasetModal = ({ isOpen, onClose }) => {
               </div>
 
               {/* Main Recognition Workspace */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'start' }}>
                 {/* Left: Input Image Preview & Visual Telemetry */}
                 <div>
                   <div style={{ 

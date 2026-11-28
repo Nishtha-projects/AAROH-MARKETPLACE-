@@ -1022,7 +1022,7 @@ export function AdminDashboard({
       </header>
 
       {/* Main Content Area */}
-      <main style={{ maxWidth: '1440px', margin: '0 auto', padding: '28px 24px' }}>
+      <main style={{ maxWidth: '1440px', margin: '0 auto', padding: 'clamp(14px, 3vw, 28px) clamp(12px, 3vw, 24px)' }}>
         {/* Navigation Tabs */}
         <div style={{
           display: 'flex',

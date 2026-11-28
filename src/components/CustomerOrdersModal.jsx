@@ -20,7 +20,7 @@ export const CustomerOrdersModal = ({
   return (
     <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true" style={{ padding: '16px' }}>
       <div 
-        className="modal-card modal-card-large" 
+        className="modal-card modal-card-large responsive-dashboard-card" 
         onClick={(e) => e.stopPropagation()}
         style={{
           maxWidth: '1040px',
@@ -33,7 +33,7 @@ export const CustomerOrdersModal = ({
         }}
       >
         {/* LEFT: DEEP FOREST GREEN SIDEBAR */}
-        <div style={{
+        <div className="responsive-dashboard-sidebar" style={{
           width: '260px',
           backgroundColor: '#1E3524',
           color: '#FAF6EE',
@@ -45,7 +45,7 @@ export const CustomerOrdersModal = ({
         }}>
           <div>
             {/* Wooden Badge Header */}
-            <div style={{
+            <div className="responsive-dashboard-sidebar-header" style={{
               backgroundColor: '#2A4732',
               borderRadius: 'var(--radius-md)',
               padding: '14px 16px',
@@ -79,7 +79,7 @@ export const CustomerOrdersModal = ({
             </div>
 
             {/* Navigation links */}
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <nav className="responsive-dashboard-nav" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {[
                 { id: 'orders', label: 'My Artisan Orders', icon: Package, count: orders.length },
                 { id: 'saved', label: 'Saved Heirlooms', icon: Heart, count: 3 },
@@ -129,6 +129,7 @@ export const CustomerOrdersModal = ({
           </div>
 
           <button
+            className="responsive-dashboard-sidebar-footer"
             onClick={onSignOut}
             style={{
               padding: '10px 14px',
@@ -147,7 +148,7 @@ export const CustomerOrdersModal = ({
         </div>
 
         {/* RIGHT: SOFT CREAM CONTENT CANVAS */}
-        <div style={{
+        <div className="responsive-dashboard-content" style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
@@ -156,9 +157,11 @@ export const CustomerOrdersModal = ({
         }}>
           {/* Header */}
           <div style={{
-            padding: '18px 28px',
+            padding: 'clamp(14px, 3vw, 18px) clamp(16px, 4vw, 28px)',
             borderBottom: '1px solid #EBE4D5',
             display: 'flex',
+            flexWrap: 'wrap',
+            gap: '12px',
             alignItems: 'center',
             justifyContent: 'space-between',
             backgroundColor: '#FFFDF9'
