@@ -35,7 +35,7 @@ import {
   initiateMicrosoftLogin
 } from '../services/apiAuth';
 import { useTranslation } from 'react-i18next';
-import { TurnstileWidget } from './TurnstileWidget';
+import { AlphanumericCaptcha } from './AlphanumericCaptcha';
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -383,6 +383,10 @@ export const LoginPage = ({
       setErrorMessage("Passwords do not match.");
       return;
     }
+    if (!captchaToken) {
+      setErrorMessage("Please complete the Human Verification CAPTCHA before registering.");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -638,6 +642,10 @@ export const LoginPage = ({
       setErrorMessage("Please enter your registered email address or mobile phone number.");
       return;
     }
+    if (!captchaToken) {
+      setErrorMessage("Please complete the Human Verification CAPTCHA before requesting a code.");
+      return;
+    }
 
     try {
       setIsSendingLoginOtp(true);
@@ -716,6 +724,10 @@ export const LoginPage = ({
       setErrorMessage("Please enter your Email or Phone number and password.");
       return;
     }
+    if (!captchaToken) {
+      setErrorMessage("Please complete the Human Verification CAPTCHA before signing in.");
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -757,6 +769,10 @@ export const LoginPage = ({
 
     if (!forgotIdentifier.trim()) {
       setErrorMessage("Please enter your registered Email Address or Phone Number.");
+      return;
+    }
+    if (!captchaToken) {
+      setErrorMessage("Please complete the Human Verification CAPTCHA before sending a recovery code.");
       return;
     }
 
@@ -1266,16 +1282,12 @@ export const LoginPage = ({
                           </span>
                         </div>
 
-                        {/* Cloudflare Turnstile CAPTCHA */}
-                        <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                          <TurnstileWidget
-                            theme={themeMode}
-                            action="login_otp"
-                            onVerify={(token) => setCaptchaToken(token)}
-                            onExpire={() => setCaptchaToken('')}
-                            onError={() => setCaptchaToken('')}
-                          />
-                        </div>
+                        {/* Human Verification CAPTCHA */}
+                        <AlphanumericCaptcha
+                          theme={themeMode}
+                          onVerify={(token) => setCaptchaToken(token)}
+                          onExpire={() => setCaptchaToken('')}
+                        />
 
                         <button
                           type="submit"
@@ -1483,16 +1495,12 @@ export const LoginPage = ({
                       </div>
                     </div>
 
-                    {/* Cloudflare Turnstile CAPTCHA */}
-                    <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                      <TurnstileWidget
-                        theme={themeMode}
-                        action="login"
-                        onVerify={(token) => setCaptchaToken(token)}
-                        onExpire={() => setCaptchaToken('')}
-                        onError={() => setCaptchaToken('')}
-                      />
-                    </div>
+                    {/* Human Verification CAPTCHA */}
+                    <AlphanumericCaptcha
+                      theme={themeMode}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken('')}
+                    />
 
                     <button
                       type="submit"
@@ -1730,16 +1738,12 @@ export const LoginPage = ({
                   </div>
                 </div>
 
-                {/* Cloudflare Turnstile CAPTCHA */}
-                <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                  <TurnstileWidget
-                    theme={themeMode}
-                    action="signup"
-                    onVerify={(token) => setCaptchaToken(token)}
-                    onExpire={() => setCaptchaToken('')}
-                    onError={() => setCaptchaToken('')}
-                  />
-                </div>
+                {/* Human Verification CAPTCHA */}
+                <AlphanumericCaptcha
+                  theme={themeMode}
+                  onVerify={(token) => setCaptchaToken(token)}
+                  onExpire={() => setCaptchaToken('')}
+                />
 
                 <button
                   type="submit"
@@ -2267,16 +2271,12 @@ export const LoginPage = ({
                       />
                     </div>
 
-                    {/* Cloudflare Turnstile CAPTCHA */}
-                    <div style={{ margin: '14px 0', minHeight: '65px' }}>
-                      <TurnstileWidget
-                        theme={themeMode}
-                        action="forgot_password"
-                        onVerify={(token) => setCaptchaToken(token)}
-                        onExpire={() => setCaptchaToken('')}
-                        onError={() => setCaptchaToken('')}
-                      />
-                    </div>
+                    {/* Human Verification CAPTCHA */}
+                    <AlphanumericCaptcha
+                      theme={themeMode}
+                      onVerify={(token) => setCaptchaToken(token)}
+                      onExpire={() => setCaptchaToken('')}
+                    />
 
                     <button
                       type="submit"

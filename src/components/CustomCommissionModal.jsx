@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Sparkles, ShieldCheck, CheckCircle, Info, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { TRANSLATIONS } from '../data/translations';
+import { AlphanumericCaptcha } from './AlphanumericCaptcha';
 
 export const CustomCommissionModal = ({
   lang,
@@ -24,6 +25,8 @@ export const CustomCommissionModal = ({
     deadlineWeeks: '4'
   });
   const [submitted, setSubmitted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -42,6 +45,11 @@ export const CustomCommissionModal = ({
       alert("Please confirm you have permission to use the reference image.");
       return;
     }
+    if (!captchaToken) {
+      setCaptchaError("Please complete the Human Verification CAPTCHA before submitting.");
+      return;
+    }
+    setCaptchaError('');
 
     const commissionRecord = {
       id: `COM-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -326,6 +334,20 @@ export const CustomCommissionModal = ({
                   />
                 </div>
               </div>
+
+              <AlphanumericCaptcha
+                onVerify={(token) => {
+                  setCaptchaToken(token);
+                  if (token) setCaptchaError('');
+                }}
+                onExpire={() => setCaptchaToken('')}
+              />
+
+              {captchaError && (
+                <div style={{ color: 'var(--accent-rose, #C25634)', fontSize: '0.84rem', marginBottom: '12px', fontWeight: 600 }}>
+                  {captchaError}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                 <button type="button" className="btn-secondary" onClick={onClose}>

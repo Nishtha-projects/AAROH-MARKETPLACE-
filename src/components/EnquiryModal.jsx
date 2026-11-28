@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, CheckCircle, Send, ShieldCheck } from 'lucide-react';
 import { TRANSLATIONS } from '../data/translations';
+import { AlphanumericCaptcha } from './AlphanumericCaptcha';
 
 export const EnquiryModal = ({
   lang,
@@ -23,9 +24,16 @@ export const EnquiryModal = ({
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaError, setCaptchaError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!captchaToken) {
+      setCaptchaError("Please complete the Human Verification CAPTCHA before sending your enquiry.");
+      return;
+    }
+    setCaptchaError('');
     const newEnquiry = {
       id: `ENQ-${Math.floor(100 + Math.random() * 900)}`,
       date: new Date().toISOString().split('T')[0],
@@ -189,6 +197,20 @@ export const EnquiryModal = ({
                 <ShieldCheck size={14} color="var(--accent-olive)" />
                 <span>Your contact information is only shared with the verified artisan collective.</span>
               </div>
+
+              <AlphanumericCaptcha
+                onVerify={(token) => {
+                  setCaptchaToken(token);
+                  if (token) setCaptchaError('');
+                }}
+                onExpire={() => setCaptchaToken('')}
+              />
+
+              {captchaError && (
+                <div style={{ color: 'var(--accent-rose, #C25634)', fontSize: '0.84rem', marginBottom: '12px', fontWeight: 600 }}>
+                  {captchaError}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button type="button" className="btn-secondary" onClick={onClose}>
